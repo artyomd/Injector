@@ -1,0 +1,57 @@
+plugins {
+    id "maven"
+}
+apply plugin: 'com.android.library'
+
+apply from: '../../params.gradle'
+
+
+android {
+    compileSdkVersion 27
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 27
+        versionCode 1
+        versionName "1.0"
+    }
+
+    configurations {
+        deployerJars
+    }
+
+    task javadoc(type: Javadoc) {
+        source = android.sourceSets.main.java.srcDirs
+        classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+        destinationDir = file("../javadoc/")
+        failOnError false
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.getDestinationDir()
+    }
+
+    task androidSourcesJar(type: Jar) {
+        classifier = 'sources'
+        from android.sourceSets.main.java.srcDirs
+    }
+
+    artifacts {
+        archives androidSourcesJar
+        archives javadocJar
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                configuration = configurations.deployerJars
+                repository(url: repositoryUrl) {
+                    authentication(userName: username, password: password)
+                }
+                pom.version = version
+                pom.artifactId = "injector-android"
+                pom.groupId = "com.artyomd.injector"
+            }
+        }
+    }
+}
