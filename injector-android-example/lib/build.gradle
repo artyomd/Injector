@@ -1,0 +1,15 @@
+apply plugin: 'com.android.library'
+apply plugin: 'com.artyomd.injector'
+
+android {
+    compileSdkVersion 27
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 27
+    }
+}
+
+dependencies {
+    inject 'com.airbnb.android:lottie:2.5.0-beta1'
+    implementation 'com.android.support:appcompat-v7:27.0.2'
+}

@@ -19,15 +19,16 @@ dependencies {
     compile gradleApi()
     compile 'com.squareup:javapoet:1.9.0'
     compile 'com.google.guava:guava:23.6-jre'
+    compile 'commons-io:commons-io:2.6'
 }
 
 uploadArchives {
     repositories {
         mavenDeployer {
-            repository(url: "https://mymavenrepo.com/repo/o3T6EYYoP4cFGzToXIni/"){
+            repository(url: "https://mymavenrepo.com/repo/o3T6EYYoP4cFGzToXIni/") {
                 authentication(userName: username, password: password)
             }
-            pom.version = version
+            pom.version = versionName
             pom.artifactId = "injector"
             pom.groupId = "com.artyomd.injector"
         }

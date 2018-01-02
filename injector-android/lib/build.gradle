@@ -48,7 +48,7 @@ android {
                 repository(url: repositoryUrl) {
                     authentication(userName: username, password: password)
                 }
-                pom.version = version
+                pom.version = versionName
                 pom.artifactId = "injector-android"
                 pom.groupId = "com.artyomd.injector"
             }
