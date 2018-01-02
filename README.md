@@ -1,5 +1,5 @@
 # Injector
-Injector is just a gradle plugin for android projects which helps making third party android libraries downloadable. Injector supports android gradle plugin **3.0.0** and grater.
+Injector is just a gradle plugin for android projects which helps making third party android libraries downloadable. Injector supports android gradle plugin **3.0.0** and higher.
 This project was inspired by [fat-aar-plugin](https://github.com/Vigi0303/fat-aar-plugin)
 # How it works
 Injector plugin extracts all aar files into build/exploded-aar directory then, merges all manifests to your project's manifest, copies all resources into your project's resource dir, generates R.java for aar libs, compiles them and injects classes into lib's class.jar and then creates dex from jars by using dx tool.
