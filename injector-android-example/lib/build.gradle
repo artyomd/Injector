@@ -9,6 +9,7 @@ android {
     }
 }
 
+
 dependencies {
     inject 'com.airbnb.android:lottie:2.5.0-beta1'
     implementation 'com.android.support:appcompat-v7:27.0.2'

@@ -18,7 +18,7 @@ public class InjectorPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         this.project = project
-        extension = project.extensions.create('injectExclude', InjectorExtension)
+        extension = project.extensions.create('injectConfig', InjectorExtension)
         createConfiguration()
         project.afterEvaluate {
             resolveArtifacts()
@@ -68,7 +68,7 @@ public class InjectorPlugin implements Plugin<Project> {
 
     private void processVariant(variant) {
         VariantProcessor processor = new VariantProcessor(project, variant)
-        for (artifact in artifacts) {
+        artifacts.each { artifact ->
             if ('aar' == artifact.type) {
                 if (extension.checkArtifact(artifact.moduleVersion.id.group)) {
                     AndroidArchiveLibrary library = new AndroidArchiveLibrary(project, artifact)
@@ -77,10 +77,10 @@ public class InjectorPlugin implements Plugin<Project> {
             }
             if ('jar' == artifact.type) {
                 if (extension.checkArtifact(artifact.getModuleVersion().id.group)) {
-                    processor.addJarFile(artifact.file)
+                    processor.addJarFile(artifact)
                 }
             }
         }
-        processor.processVariant(extension.dexLocation)
+        processor.processVariant(extension)
     }
 }

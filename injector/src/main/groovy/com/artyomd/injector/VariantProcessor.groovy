@@ -2,6 +2,7 @@ package com.artyomd.injector
 
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.ResolvedArtifact
 
 class VariantProcessor {
 
@@ -11,7 +12,7 @@ class VariantProcessor {
 
     private Collection<AndroidArchiveLibrary> androidArchiveLibraries = new ArrayList<>()
 
-    private Collection<File> jarFiles = new ArrayList<>()
+    private Collection<ResolvedArtifact> jarFiles = new ArrayList<>()
 
     public VariantProcessor(Project project, variant) {
         this.project = project
@@ -22,11 +23,11 @@ class VariantProcessor {
         androidArchiveLibraries.add(library)
     }
 
-    public void addJarFile(File jar) {
+    public void addJarFile(ResolvedArtifact jar) {
         jarFiles.add(jar)
     }
 
-    public void processVariant(String dexLocation) {
+    public void processVariant(InjectorExtension configs) {
         if (!androidArchiveLibraries.isEmpty()) {
             extractAARs()
             processManifest()
@@ -35,7 +36,7 @@ class VariantProcessor {
             processAssets()
             processJniLibs()
         }
-        createDex(dexLocation)
+        createDex(configs)
     }
 
     /**
@@ -56,7 +57,7 @@ class VariantProcessor {
         manifestsMergeTask.setVariantName(variant.name)
         manifestsMergeTask.setMainManifestFile(project.android.sourceSets.main.manifest.srcFile)
         List<File> list = new ArrayList<>()
-        for (archiveLibrary in androidArchiveLibraries) {
+        androidArchiveLibraries.each { archiveLibrary ->
             list.add(archiveLibrary.getManifest())
         }
         manifestsMergeTask.setSecondaryManifestFiles(list)
@@ -72,7 +73,7 @@ class VariantProcessor {
         String taskPath = 'preBuild'
         Task preBuildTask = project.tasks.findByPath(taskPath)
         preBuildTask.doFirst {
-            for (AndroidArchiveLibrary library : androidArchiveLibraries) {
+            androidArchiveLibraries.each { AndroidArchiveLibrary library ->
                 //we are relying on ant builder to extract aars
                 def ant = new AntBuilder()
                 ant.unzip(src: library.getArtifactFile().getAbsolutePath(),
@@ -92,7 +93,7 @@ class VariantProcessor {
             throw new RuntimeException("Can not find task ${taskPath}!")
         }
         resourceGenTask.doFirst {
-            for (archiveLibrary in androidArchiveLibraries) {
+            androidArchiveLibraries.each { archiveLibrary ->
                 project.android.sourceSets."main".res.srcDir(archiveLibrary.resFolder)
             }
         }
@@ -104,7 +105,7 @@ class VariantProcessor {
     private void processRSources() {
         def processResourcesTask = variant.getOutputs()[0].getProcessResources()
         processResourcesTask.doLast {
-            for (archiveLibrary in androidArchiveLibraries) {
+            androidArchiveLibraries.each { archiveLibrary ->
                 RSourceGenerator.generate(archiveLibrary)
             }
         }
@@ -118,11 +119,11 @@ class VariantProcessor {
         if (assetsTask == null) {
             throw new RuntimeException("Can not find task in variant.getMergeAssets()!")
         }
-        for (archiveLibrary in androidArchiveLibraries) {
+        androidArchiveLibraries.each { archiveLibrary ->
             assetsTask.getInputs().dir(archiveLibrary.assetsFolder)
         }
         assetsTask.doFirst {
-            for (archiveLibrary in androidArchiveLibraries) {
+            androidArchiveLibraries.each { archiveLibrary ->
                 project.android.sourceSets."main".assets.srcDir(archiveLibrary.assetsFolder)
             }
         }
@@ -137,11 +138,11 @@ class VariantProcessor {
         if (mergeJniLibsTask == null) {
             throw new RuntimeException("Can not find task ${taskPath}!")
         }
-        for (archiveLibrary in androidArchiveLibraries) {
+        androidArchiveLibraries.each { archiveLibrary ->
             mergeJniLibsTask.getInputs().dir(archiveLibrary.jniFolder)
         }
         mergeJniLibsTask.doFirst {
-            for (archiveLibrary in androidArchiveLibraries) {
+            androidArchiveLibraries.each { archiveLibrary ->
                 project.android.sourceSets."main".jniLibs.srcDir(archiveLibrary.jniFolder)
             }
         }
@@ -152,27 +153,39 @@ class VariantProcessor {
      * getting path to current build tools version dx tool(in android sdk)
      * and executing command dx --dex --output=/outputs/inject/toInject.dex jars
      * */
-    private void createDex(String dexLocation) {
+    private void createDex(InjectorExtension extension) {
         Properties properties = new Properties()
         properties.load(project.rootProject.file('local.properties').newDataInputStream())
         def sdkDir = properties.getProperty('sdk.dir')
         def buildToolsVersion = project.android.buildToolsVersion
         String pathToDx = sdkDir + "/build-tools/" + buildToolsVersion + "/dx --dex"
-        StringBuilder stringBuilder = new StringBuilder()
-        stringBuilder.append(pathToDx)
-        String outPutDex = project.buildDir.absolutePath + variant.outputs[0].getDirName() + dexLocation
-        stringBuilder.append(" --output=" + outPutDex)
-        for (AndroidArchiveLibrary library : androidArchiveLibraries) {
-            stringBuilder.append(" " + library.classesJarFile.absolutePath)
-        }
-        for (File jar : jarFiles) {
-            stringBuilder.append(" " + jar.absolutePath)
+        String outFile = project.buildDir.absolutePath + variant.outputs[0].getDirName() + extension.dexLoaction
+        List artifacts = new ArrayList();
+        artifacts.addAll(androidArchiveLibraries)
+        artifacts.addAll(jarFiles)
+        Map<String, List> dexs = extension.getDexes(artifacts)
+        List<String> commands = new ArrayList<>();
+        dexs.entrySet().each { Map.Entry<String, List> entry ->
+            StringBuilder stringBuilder = new StringBuilder()
+            stringBuilder.append(pathToDx)
+            String outPutDex = outFile + entry.key
+            stringBuilder.append(" --output=" + outPutDex)
+            entry.value.each {artifact ->
+                if(artifact instanceof AndroidArchiveLibrary){
+                    stringBuilder.append(" " + artifact.classesJarFile.absolutePath)
+                }else{
+                    stringBuilder.append(" " + jar.file.absolutePath)
+                }
+            }
+            commands.add(stringBuilder.toString())
         }
         String taskPath = 'assemble' + variant.name.capitalize()
         Task assembleTask = project.tasks.findByPath(taskPath)
         assembleTask.doLast {
-            new File(outPutDex).getParentFile().mkdirs();
-            Utils.execCommand(stringBuilder.toString())
+            new File(outFile).getParentFile().mkdirs();
+            commands.each {command ->
+                Utils.execCommand(command)
+            }
         }
     }
 }

@@ -23,6 +23,10 @@ public class AndroidArchiveLibrary {
         this.artifact = artifact;
     }
 
+    public ResolvedArtifact getArtifact() {
+        return artifact;
+    }
+
     public File getArtifactFile() {
         return artifact.getFile();
     }
