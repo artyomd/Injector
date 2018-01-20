@@ -4,13 +4,30 @@ apply plugin: 'com.artyomd.injector'
 android {
     compileSdkVersion 27
     defaultConfig {
-        minSdkVersion 15
+        minSdkVersion 16
         targetSdkVersion 27
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
+repositories {
+    jcenter() // includes the MoPub SDK and AVID library
+    maven { url "https://s3.amazonaws.com/moat-sdk-builds" }
+    maven { url 'https://maven.google.com' } // necessary for Android API 26
+}
 
 dependencies {
     inject 'com.airbnb.android:lottie:2.5.0-beta1'
-    implementation 'com.android.support:appcompat-v7:27.0.2'
+    inject 'com.mopub:mopub-sdk:4.18.0'
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+}
+
+injectConfig {
+    forceExcludeNames = ["libAvid-mopub", "moat-mobile-app-kit"]
+    /*groups = [
+            "mainGroup.dex": ["com.airbnb.android", ""]
+    ]*/
 }

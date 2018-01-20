@@ -1,9 +1,8 @@
 package com.artyomd.injector;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import org.gradle.api.Project;
+
+import java.io.*;
 
 public class Utils {
     public static void execCommand(String command, String... commands) throws IOException {
@@ -44,5 +43,9 @@ public class Utils {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    public static File getWorkingDir(Project project) {
+        return project.file(project.getBuildDir() + "/exploded-aar/");
     }
 }

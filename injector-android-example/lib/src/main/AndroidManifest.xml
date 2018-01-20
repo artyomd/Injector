@@ -4,6 +4,6 @@
     package="com.artyomd.injector.example.lib">
 
     <uses-sdk
-        android:minSdkVersion="15"
+        android:minSdkVersion="16"
         android:targetSdkVersion="27"/>
 </manifest>

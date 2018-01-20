@@ -37,14 +37,16 @@ public class InjectorPlugin implements Plugin<Project> {
     private void createConfiguration() {
         injectConf = project.configurations.create('inject')
         injectConf.visible = false
+        injectConf.setTransitive(true)
         project.gradle.addListener(new DependencyResolutionListener() {
             @Override
             void beforeResolve(ResolvableDependencies resolvableDependencies) {
                 injectConf.dependencies.each { dependency ->
-                    if (!extension.checkArtifact(dependency.group)) {
-                        project.dependencies.add('implementation', dependency)
-                    } else {
+                    if (extension.checkGroup(dependency.group) && extension.checkName(dependency.name)) {
                         project.dependencies.add('compileOnly', dependency)
+                    } else if(!extension.checkForceExcluded(dependency)){
+                        project.dependencies.add('implementation', dependency)
+
                     }
                 }
                 project.gradle.removeListener(this)
@@ -58,7 +60,7 @@ public class InjectorPlugin implements Plugin<Project> {
     private void resolveArtifacts() {
         Set set = new HashSet<>()
         injectConf.resolvedConfiguration.resolvedArtifacts.each { artifact ->
-            if (('aar' == artifact.type || 'jar' == artifact.type) && extension.checkArtifact(artifact.moduleVersion.id.group)) {
+            if (('aar' == artifact.type || 'jar' == artifact.type) && extension.checkArtifact(artifact) && !extension.checkForceExcluded(artifact)) {
                 println 'inject-->[injection detected][' + artifact.type + ']' + artifact.moduleVersion.id
                 set.add(artifact)
             }
@@ -70,13 +72,13 @@ public class InjectorPlugin implements Plugin<Project> {
         VariantProcessor processor = new VariantProcessor(project, variant)
         artifacts.each { artifact ->
             if ('aar' == artifact.type) {
-                if (extension.checkArtifact(artifact.moduleVersion.id.group)) {
+                if (extension.checkArtifact(artifact)) {
                     AndroidArchiveLibrary library = new AndroidArchiveLibrary(project, artifact)
                     processor.addAndroidArchiveLibrary(library)
                 }
             }
             if ('jar' == artifact.type) {
-                if (extension.checkArtifact(artifact.getModuleVersion().id.group)) {
+                if (extension.checkArtifact(artifact)) {
                     processor.addJarFile(artifact)
                 }
             }

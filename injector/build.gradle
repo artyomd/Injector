@@ -20,6 +20,7 @@ dependencies {
     compile 'com.squareup:javapoet:1.9.0'
     compile 'com.google.guava:guava:23.6-jre'
     compile 'commons-io:commons-io:2.6'
+    //compile 'com.android.tools.build:gradle:3.0.1'
 }
 
 uploadArchives {

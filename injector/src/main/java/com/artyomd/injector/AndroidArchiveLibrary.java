@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+@SuppressWarnings("unused")
 public class AndroidArchiveLibrary {
 
     private final Project project;
@@ -45,7 +46,7 @@ public class AndroidArchiveLibrary {
     }
 
     public File getRootFolder() {
-        File explodedRootDir = project.file(project.getBuildDir() + "/exploded-aar/");
+        File explodedRootDir = Utils.getWorkingDir(project);
         ModuleVersionIdentifier id = artifact.getModuleVersion().getId();
         return project.file(explodedRootDir + "/" + id.getGroup() + "/" + id.getName() + "/" + id.getVersion());
     }

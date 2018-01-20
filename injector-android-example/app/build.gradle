@@ -5,10 +5,17 @@ android {
 
     defaultConfig {
         applicationId "com.artyomd.inject.example"
-        minSdkVersion 15
+        minSdkVersion 16
         targetSdkVersion 27
         versionCode 1
         versionName "1.0"
+    }
+    buildTypes {
+        release {
+            // in later versions of the Gradle plugin runProguard -> minifyEnabled
+            minifyEnabled true
+            proguardFile getDefaultProguardFile('proguard-android.txt')
+        }
     }
 }
 
