@@ -10,21 +10,24 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import org.apache.commons.io.FileUtils;
+import org.gradle.api.JavaVersion;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
+import javax.annotation.Nonnull;
 import javax.lang.model.element.Modifier;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 public class RSourceGenerator {
 
-    public static void generate(AndroidArchiveLibrary androidLibrary) throws IOException {
+    public static void generate(@Nonnull AndroidArchiveLibrary androidLibrary, JavaVersion projectSourceVersion, JavaVersion projectTargetVersion) throws IOException {
         File symbolFile = androidLibrary.getSymbolFile();
         File manifestFile = androidLibrary.getManifest();
         if (!symbolFile.exists()) {
@@ -39,11 +42,7 @@ public class RSourceGenerator {
         for (String line : lines) {
             String[] strings = line.split(" ", 4);
             TextSymbolItem symbolItem = new TextSymbolItem(strings[0], strings[1], strings[2], strings[3]);
-            List<TextSymbolItem> symbolItems = symbolItemsMap.get(symbolItem.getClazz());
-            if (symbolItems == null) {
-                symbolItems = Lists.newArrayList();
-                symbolItemsMap.put(symbolItem.getClazz(), symbolItems);
-            }
+            List<TextSymbolItem> symbolItems = symbolItemsMap.computeIfAbsent(symbolItem.getClazz(), k -> Lists.newArrayList());
             symbolItems.add(symbolItem);
         }
         if (symbolItemsMap.isEmpty()) {
@@ -59,7 +58,7 @@ public class RSourceGenerator {
             Element element = doc.getDocumentElement();
             packageName = element.getAttribute("package");
         } catch (SAXException | ParserConfigurationException e) {
-            System.out.println(e.toString());
+            e.printStackTrace();
         }
         if (Strings.isNullOrEmpty(packageName)) {
             throw new RuntimeException("Parse package from " + manifestFile + " error!");
@@ -99,7 +98,11 @@ public class RSourceGenerator {
         //compile R.java into R.class
         Collection<File> files = FileUtils.listFiles(outputDir, new String[]{"java"}, true);
         StringBuilder javac = new StringBuilder();
-        javac.append("javac -source 1.7 -target 1.7");
+        javac.append("javac -source ")
+                .append(projectSourceVersion.isJava8Compatible() ? "1.8" : "1.7")
+                .append(" -target ")
+                .append(projectTargetVersion.isJava8Compatible() ? "1.8" : "1.7");
+
         for (File file : files) {
             javac.append(" ").append(file.getAbsolutePath());
         }
@@ -113,7 +116,7 @@ public class RSourceGenerator {
             injectCommandBuilder.append(" ");
             String path = file.getAbsolutePath();
             path = path.replace("$", "\\$");
-            injectCommandBuilder.append(path.substring(path.indexOf("R") + 2));
+            injectCommandBuilder.append(path.substring(path.indexOf("/R") + 3));
         }
         Utils.execCommand("sh", cdR, injectCommandBuilder.toString());
 
@@ -125,26 +128,26 @@ public class RSourceGenerator {
         private String name;
         private String value;
 
-        public TextSymbolItem(String type, String clazz, String name, String value) {
+        TextSymbolItem(String type, String clazz, String name, String value) {
             this.type = type;
             this.clazz = clazz;
             this.name = name;
             this.value = value;
         }
 
-        public String getType() {
+        String getType() {
             return type;
         }
 
-        public String getClazz() {
+        String getClazz() {
             return clazz;
         }
 
-        public String getName() {
+        String getName() {
             return name;
         }
 
-        public String getValue() {
+        String getValue() {
             return value;
         }
     }

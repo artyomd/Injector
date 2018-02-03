@@ -4,12 +4,28 @@ apply plugin: 'com.artyomd.injector'
 android {
     compileSdkVersion 27
     defaultConfig {
-        minSdkVersion 15
+        minSdkVersion 16
         targetSdkVersion 27
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
+repositories {
+    mavenCentral()
+    google()
+}
+
 dependencies {
-    inject 'com.airbnb.android:lottie:2.5.0-beta1'
+    inject 'com.airbnb.android:lottie:2.5.0-rc1'
     implementation 'com.android.support:appcompat-v7:27.0.2'
+}
+
+injectConfig {
+    enabled = true
+    groups = [
+            "lottie.dex": ["com.airbnb.android"]
+    ]
 }

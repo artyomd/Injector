@@ -5,10 +5,16 @@ android {
 
     defaultConfig {
         applicationId "com.artyomd.inject.example"
-        minSdkVersion 15
+        minSdkVersion 16
         targetSdkVersion 27
         versionCode 1
         versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFile getDefaultProguardFile('proguard-android.txt')
+        }
     }
 }
 
@@ -17,6 +23,6 @@ repositories {
 }
 
 dependencies {
-    api project(":lib")
-    implementation "com.artyomd.injector:injector-android:0.1@aar"
+    implementation project(":lib")
+    implementation "com.artyomd.injector:injector-android:0.2@aar"
 }
