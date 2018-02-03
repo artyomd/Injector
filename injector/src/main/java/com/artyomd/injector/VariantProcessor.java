@@ -88,16 +88,18 @@ class VariantProcessor {
         checkArtifacts(jarFiles);
         checkArtifacts(androidArchiveLibraries);
 
+        ProcessAndroidResources processAndroidResources = Iterables.get(variant.getOutputs(), 0).getProcessResources();
+
         if (!androidArchiveLibraries.isEmpty()) {
             extractAARs();
             processManifest();
             processResourcesAndR();
-            processRSources();
+            processRSources(processAndroidResources);
             processAssets();
             processJniLibs();
         }
         processProguardTxt();
-        createDex(configs);
+        createDex(configs, processAndroidResources);
     }
 
     /**
@@ -134,8 +136,12 @@ class VariantProcessor {
         assert preBuildTask != null;
         preBuildTask.doFirst(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
             try {
-                ZipFile zipFile = new ZipFile(resolvedArtifact.getFile());
-                zipFile.extractAll(((AndroidArchiveLibrary) resolvedArtifact).getRootFolder().getAbsolutePath());
+                String extractedAarPath = ((AndroidArchiveLibrary) resolvedArtifact).getRootFolder().getAbsolutePath();
+                File extractedAar = new File(extractedAarPath);
+                if (!extractedAar.exists()) {
+                    ZipFile zipFile = new ZipFile(resolvedArtifact.getFile());
+                    zipFile.extractAll(extractedAarPath);
+                }
             } catch (ZipException e) {
                 e.printStackTrace();
             }
@@ -161,8 +167,7 @@ class VariantProcessor {
     /**
      * generate R.java
      */
-    private void processRSources() {
-        ProcessAndroidResources processAndroidResources = Iterables.get(variant.getOutputs(), 0).getProcessResources();
+    private void processRSources(ProcessAndroidResources processAndroidResources) {
         processAndroidResources.doLast(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
             try {
                 RSourceGenerator.generate(((AndroidArchiveLibrary) resolvedArtifact), sourceCompatibilityVersion, targetCompatibilityVersion);
@@ -265,7 +270,7 @@ class VariantProcessor {
      * getting path to current build tools version dx tool(in android sdk)
      * and executing command dx --dex --output=/outputs/inject/toInject.dex jars
      */
-    private void createDex(InjectorExtension extension) {
+    private void createDex(InjectorExtension extension, ProcessAndroidResources processAndroidResources) {
         Properties properties = new Properties();
         String sdkDir;
         if (project.getRootProject().file("local.properties").exists()) {
@@ -324,5 +329,6 @@ class VariantProcessor {
                 e.printStackTrace();
             }
         }));
+        assembleTask.dependsOn(processAndroidResources);
     }
 }

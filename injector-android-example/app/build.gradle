@@ -24,6 +24,5 @@ repositories {
 
 dependencies {
     implementation project(":lib")
-    implementation 'com.squareup.okhttp3:okhttp:3.9.1'
     implementation "com.artyomd.injector:injector-android:0.2-SNAPSHOT@aar"
 }

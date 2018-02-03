@@ -10,9 +10,9 @@ public class Application extends android.app.Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		File dexPath = new File(getCacheDir() + "/dex", "inject.dex");
+		File dexPath = new File(getFilesDir() + "/dex", "lottie.dex");
 		if (!dexPath.exists()) {
-			DexUtils.prepareDex(getApplicationContext(), dexPath, "inject.dex");
+			DexUtils.prepareDex(getApplicationContext(), dexPath, "lottie.dex");
 		}
 		List<File> dexs = new ArrayList<>();
 		dexs.add(dexPath);
