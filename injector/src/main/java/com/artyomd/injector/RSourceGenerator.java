@@ -15,6 +15,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
+import javax.annotation.Nonnull;
 import javax.lang.model.element.Modifier;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -26,7 +27,7 @@ import java.util.Map;
 
 public class RSourceGenerator {
 
-    public static void generate(AndroidArchiveLibrary androidLibrary, JavaVersion projectSourceVersion, JavaVersion projectTargetVersion) throws IOException {
+    public static void generate(@Nonnull AndroidArchiveLibrary androidLibrary, JavaVersion projectSourceVersion, JavaVersion projectTargetVersion) throws IOException {
         File symbolFile = androidLibrary.getSymbolFile();
         File manifestFile = androidLibrary.getManifest();
         if (!symbolFile.exists()) {
@@ -57,7 +58,7 @@ public class RSourceGenerator {
             Element element = doc.getDocumentElement();
             packageName = element.getAttribute("package");
         } catch (SAXException | ParserConfigurationException e) {
-            System.out.println(e.toString());
+            e.printStackTrace();
         }
         if (Strings.isNullOrEmpty(packageName)) {
             throw new RuntimeException("Parse package from " + manifestFile + " error!");
@@ -115,7 +116,7 @@ public class RSourceGenerator {
             injectCommandBuilder.append(" ");
             String path = file.getAbsolutePath();
             path = path.replace("$", "\\$");
-            injectCommandBuilder.append(path.substring(path.indexOf("R") + 2));
+            injectCommandBuilder.append(path.substring(path.indexOf("/R") + 3));
         }
         Utils.execCommand("sh", cdR, injectCommandBuilder.toString());
 

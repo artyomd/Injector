@@ -12,7 +12,6 @@ android {
     }
     buildTypes {
         release {
-            // in later versions of the Gradle plugin runProguard -> minifyEnabled
             minifyEnabled true
             proguardFile getDefaultProguardFile('proguard-android.txt')
         }
@@ -24,6 +23,7 @@ repositories {
 }
 
 dependencies {
-    api project(":lib")
-    implementation "com.artyomd.injector:injector-android:0.1@aar"
+    implementation project(":lib")
+    implementation 'com.squareup.okhttp3:okhttp:3.9.1'
+    implementation "com.artyomd.injector:injector-android:0.2-SNAPSHOT@aar"
 }

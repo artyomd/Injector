@@ -3,46 +3,28 @@ package com.artyomd.injector;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.ResolvedModuleVersion;
+import org.gradle.api.artifacts.component.ComponentArtifactIdentifier;
+import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 @SuppressWarnings("unused")
-public class AndroidArchiveLibrary {
+public class AndroidArchiveLibrary implements ResolvedArtifact {
 
     private final Project project;
-
     private final ResolvedArtifact artifact;
 
     public AndroidArchiveLibrary(Project project, ResolvedArtifact artifact) {
         if (!"aar".equals(artifact.getType())) {
-            throw new IllegalArgumentException("artifact must be aar type!");
+            throw new IllegalArgumentException("artifact must be aar type");
         }
         this.project = project;
         this.artifact = artifact;
-    }
-
-    public ResolvedArtifact getArtifact() {
-        return artifact;
-    }
-
-    public File getArtifactFile() {
-        return artifact.getFile();
-    }
-
-
-    public String getGroup() {
-        return artifact.getModuleVersion().getId().getGroup();
-    }
-
-    public String getName() {
-        return artifact.getModuleVersion().getId().getName();
-    }
-
-    public String getVersion() {
-        return artifact.getModuleVersion().getId().getVersion();
     }
 
     public File getRootFolder() {
@@ -103,5 +85,47 @@ public class AndroidArchiveLibrary {
 
     public File getSymbolFile() {
         return new File(getRootFolder(), "R.txt");
+    }
+
+    @NotNull
+    @Override
+    public File getFile() {
+        return artifact.getFile();
+    }
+
+    @NotNull
+    @Override
+    public ResolvedModuleVersion getModuleVersion() {
+        return artifact.getModuleVersion();
+    }
+
+    @NotNull
+    @Override
+    public String getType() {
+        return artifact.getType();
+    }
+
+    @NotNull
+    @Override
+    public String getName() {
+        return artifact.getModuleVersion().getId().getName();
+    }
+
+    @NotNull
+    @Override
+    public String getExtension() {
+        return artifact.getExtension();
+    }
+
+    @Nullable
+    @Override
+    public String getClassifier() {
+        return artifact.getClassifier();
+    }
+
+    @NotNull
+    @Override
+    public ComponentArtifactIdentifier getId() {
+        return artifact.getId();
     }
 }
