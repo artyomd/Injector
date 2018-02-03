@@ -75,9 +75,6 @@ public class InjectorPlugin implements Plugin<Project> {
     }
 
     private void processVariant(BaseVariant variant) {
-        if(!extension.isEnabled()){
-            return;
-        }
         VariantProcessor processor = new VariantProcessor(project, variant);
         artifacts.forEach(resolvedArtifact -> {
             if ("aar".equals(resolvedArtifact.getType())) {
