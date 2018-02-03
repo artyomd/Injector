@@ -94,12 +94,16 @@ class VariantProcessor {
             extractAARs();
             processManifest();
             processResourcesAndR();
-            processRSources(processAndroidResources);
+            if (configs.isEnabled()) {
+                processRSources(processAndroidResources);
+            }
             processAssets();
             processJniLibs();
         }
         processProguardTxt();
-        createDex(configs, processAndroidResources);
+        if (configs.isEnabled()) {
+            createDex(configs, processAndroidResources);
+        }
     }
 
     /**
