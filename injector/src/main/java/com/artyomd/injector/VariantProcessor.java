@@ -9,6 +9,7 @@ import com.android.build.gradle.tasks.ManifestProcessorTask;
 import com.android.build.gradle.tasks.MergeSourceSetFolders;
 import com.android.build.gradle.tasks.ProcessAndroidResources;
 import com.google.common.collect.Iterables;
+import groovy.util.XmlSlurper;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import org.gradle.api.JavaVersion;
@@ -16,9 +17,10 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.xml.sax.SAXException;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.util.*;
 
@@ -37,6 +39,7 @@ class VariantProcessor {
     private List<ResolvedArtifact> jarFiles = new ArrayList<>();
 
     private String variantName;
+    private String projectPackageName;
 
     VariantProcessor(Project project, BaseVariant variant) {
         this.project = project;
@@ -44,6 +47,11 @@ class VariantProcessor {
         this.androidExtension = (BaseExtension) project.getExtensions().getByName("android");
         this.variantName = variant.getName();
         this.variantName = variantName.substring(0, 1).toUpperCase() + variantName.substring(1);
+        try {
+            projectPackageName = new XmlSlurper().parse(androidExtension.getSourceSets().getByName("main").getManifest().getSrcFile()).getProperty("@package").toString();
+        } catch (IOException | SAXException | ParserConfigurationException e) {
+            e.printStackTrace();
+        }
     }
 
     void addAndroidArchiveLibrary(AndroidArchiveLibrary library) {
@@ -96,9 +104,6 @@ class VariantProcessor {
             extractAARs();
             processManifest();
             processResourcesAndR();
-            if (configs.isEnabled()) {
-                processRSources(processAndroidResources);
-            }
             processAssets();
             processJniLibs();
         }
@@ -163,6 +168,12 @@ class VariantProcessor {
         if (resourceGenTask == null) {
             throw new RuntimeException("Can not find task " + taskPath);
         }
+        androidArchiveLibraries.forEach(resolvedArtifact -> {
+            File resFolder = ((AndroidArchiveLibrary) resolvedArtifact).getResFolder();
+            if (resFolder.exists()) {
+                resourceGenTask.getInputs().dir(resFolder);
+            }
+        });
         resourceGenTask.doFirst(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
             if (((AndroidArchiveLibrary) resolvedArtifact).getResFolder().exists()) {
                 androidExtension.getSourceSets().getByName("main").getRes().srcDir(((AndroidArchiveLibrary) resolvedArtifact).getResFolder());
@@ -173,14 +184,14 @@ class VariantProcessor {
     /**
      * generate R.java
      */
-    private void processRSources(ProcessAndroidResources processAndroidResources) {
-        processAndroidResources.doLast(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
+    private void processRSources() {
+        androidArchiveLibraries.forEach(resolvedArtifact -> {
             try {
-                RSourceGenerator.generate(((AndroidArchiveLibrary) resolvedArtifact), sourceCompatibilityVersion, targetCompatibilityVersion);
+                RSourceGenerator.generate(((AndroidArchiveLibrary) resolvedArtifact), projectPackageName, project.getBuildDir().getAbsolutePath(), variantName, sourceCompatibilityVersion, targetCompatibilityVersion);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }));
+        });
     }
 
     /**
@@ -246,6 +257,8 @@ class VariantProcessor {
              PrintWriter out = new PrintWriter(bw)) {
             androidArchiveLibraries.forEach(resolvedArtifact -> out.println("\n-libraryjars " + resolvedArtifact.getFile().getAbsolutePath()));
             jarFiles.forEach(resolvedArtifact -> out.println("\n-libraryjars " + resolvedArtifact.getFile().getAbsolutePath()));
+            out.println("-keep class " + projectPackageName + ".R" + " { *; }");
+            out.println("-keep class " + projectPackageName + ".R$*" + " { *; }");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -329,6 +342,7 @@ class VariantProcessor {
         Task assembleTask = project.getTasks().findByPath(taskPath);
         assert assembleTask != null;
         assembleTask.doLast(task -> commands.forEach(s -> {
+            processRSources();
             try {
                 (new File(outFile)).mkdirs();
                 Utils.execCommand(s);
