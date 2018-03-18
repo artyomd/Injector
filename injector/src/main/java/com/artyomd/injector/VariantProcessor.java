@@ -17,6 +17,8 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.*;
 import java.util.*;
 
@@ -226,6 +228,7 @@ class VariantProcessor {
         }));
     }
 
+    @Nonnull
     private File getExternalLibsProguard() {
         File workingDir = Utils.getWorkingDir(project);
         File proguardFile = new File(workingDir, "libs.txt");
@@ -233,6 +236,7 @@ class VariantProcessor {
             proguardFile.delete();
         }
         try {
+            proguardFile.getParentFile().mkdirs();
             proguardFile.createNewFile();
         } catch (IOException e) {
             e.printStackTrace();
@@ -302,10 +306,8 @@ class VariantProcessor {
         dexs.forEach((key, value) -> {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append(pathToDx);
-            String outPutDex = outFile + key;
+            String outPutDex = outFile + key + ".zip";
             stringBuilder.append(" --output=").append(outPutDex);
-            File dexFile = new File(outPutDex);
-            dexFile.getParentFile().mkdirs();
             if (!value.isEmpty()) {
                 value.forEach(resolvedArtifact -> {
                     if (resolvedArtifact instanceof AndroidArchiveLibrary) {
@@ -328,6 +330,7 @@ class VariantProcessor {
         assert assembleTask != null;
         assembleTask.doLast(task -> commands.forEach(s -> {
             try {
+                (new File(outFile)).mkdirs();
                 Utils.execCommand(s);
             } catch (IOException e) {
                 e.printStackTrace();
