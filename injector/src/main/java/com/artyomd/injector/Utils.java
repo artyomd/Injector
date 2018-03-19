@@ -3,10 +3,11 @@ package com.artyomd.injector;
 import org.gradle.api.Project;
 
 import java.io.*;
+import java.util.Scanner;
 
 public class Utils {
     public static void execCommand(String command, String... commands) throws IOException {
-        System.out.print("executing command: " + command+" ");
+        System.out.print("executing command: " + command + " ");
         Runtime rt = Runtime.getRuntime();
         Process proc = rt.exec(command);
 
@@ -17,7 +18,7 @@ public class Utils {
         if (commands != null) {
             DataOutputStream outputStream = new DataOutputStream(proc.getOutputStream());
             for (String subCommand : commands) {
-                System.out.print(subCommand +" ");
+                System.out.print(subCommand + " ");
                 outputStream.writeBytes(subCommand + "\n");
                 outputStream.flush();
             }
@@ -67,5 +68,18 @@ public class Utils {
             }
         }
         return numbers1.length >= numbers2.length;
+    }
+
+    public static boolean contains(File file, String string) {
+        try (Scanner scanner = new Scanner(file)) {
+            while (scanner.hasNextLine()) {
+                if (scanner.nextLine().contains(string)) {
+                    return true;
+                }
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

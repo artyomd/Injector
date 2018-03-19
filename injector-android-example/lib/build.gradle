@@ -23,7 +23,6 @@ dependencies {
     inject 'com.airbnb.android:lottie:2.5.1'
     inject 'com.artyomd.test:dimen-lib:1.0.0-SNAPSHOT'
     implementation 'com.android.support:appcompat-v7:27.1.0'
-    compile 'org.jetbrains:annotations:15.0'
 }
 injectConfig {
     enabled = true
