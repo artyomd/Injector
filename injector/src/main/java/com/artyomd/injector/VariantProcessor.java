@@ -8,10 +8,22 @@ import com.android.build.gradle.tasks.InvokeManifestMerger;
 import com.android.build.gradle.tasks.ManifestProcessorTask;
 import com.android.build.gradle.tasks.MergeSourceSetFolders;
 import com.android.build.gradle.tasks.ProcessAndroidResources;
+import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.D8;
+import com.android.tools.r8.D8Command;
+import com.android.tools.r8.origin.CommandLineOrigin;
+import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.ExceptionUtils;
+import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ThreadUtils;
 import com.google.common.collect.Iterables;
+
 import groovy.util.XmlSlurper;
+
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
+
+import org.gradle.api.Action;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -21,8 +33,13 @@ import org.xml.sax.SAXException;
 
 import javax.annotation.Nonnull;
 import javax.xml.parsers.ParserConfigurationException;
+
 import java.io.*;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 class VariantProcessor {
 
@@ -35,8 +52,8 @@ class VariantProcessor {
     private JavaVersion sourceCompatibilityVersion;
     private JavaVersion targetCompatibilityVersion;
 
-    private List<ResolvedArtifact> androidArchiveLibraries = new ArrayList<>();
-    private List<ResolvedArtifact> jarFiles = new ArrayList<>();
+    private Set<AndroidArchiveLibrary> androidArchiveLibraries;
+    private Set<ResolvedArtifact> jarFiles;
 
     private String variantName;
     private String projectPackageName;
@@ -54,51 +71,18 @@ class VariantProcessor {
         }
     }
 
-    void addAndroidArchiveLibrary(AndroidArchiveLibrary library) {
-        androidArchiveLibraries.add(library);
+    public void setAndroidArchiveLibraries(Set<AndroidArchiveLibrary> androidArchiveLibraries) {
+        this.androidArchiveLibraries = androidArchiveLibraries;
     }
 
-    void addJarFile(ResolvedArtifact jar) {
-        jarFiles.add(jar);
+    public void setJarFiles(Set<ResolvedArtifact> jarFiles) {
+        this.jarFiles = jarFiles;
     }
 
-    private static void checkArtifacts(List<ResolvedArtifact> artifactsList) {
-        Map<String, Map<String, ResolvedArtifact>> artifacts = new HashMap<>();
-        for (ResolvedArtifact artifact : artifactsList) {
-            ModuleVersionIdentifier id = artifact.getModuleVersion().getId();
-            String name = id.getName();
-            String group = id.getGroup();
-            String version = id.getVersion();
-            if (artifacts.containsKey(group)) {
-                Map<String, ResolvedArtifact> names = artifacts.get(group);
-                if (names.containsKey(name)) {
-                    ResolvedArtifact old = names.get(name);
-                    if (Utils.cmp(old.getModuleVersion().getId().getVersion(), version)) {
-                        names.put(name, artifact);
-                        artifactsList.remove(old);
-                    } else {
-                        artifactsList.remove(artifact);
-                    }
-                } else {
-                    names.put(name, artifact);
-                }
-            } else {
-                Map<String, ResolvedArtifact> names = new HashMap<>();
-                names.put(name, artifact);
-                artifacts.put(group, names);
-            }
-        }
-    }
-
-    public void processVariant(InjectorExtension configs) {
+    public void processVariant(InjectorExtension extension) {
         CompileOptions compileOptions = androidExtension.getCompileOptions();
         sourceCompatibilityVersion = compileOptions.getSourceCompatibility();
         targetCompatibilityVersion = compileOptions.getTargetCompatibility();
-
-        checkArtifacts(jarFiles);
-        checkArtifacts(androidArchiveLibraries);
-
-        ProcessAndroidResources processAndroidResources = Iterables.get(variant.getOutputs(), 0).getProcessResources();
 
         if (!androidArchiveLibraries.isEmpty()) {
             extractAARs();
@@ -107,10 +91,10 @@ class VariantProcessor {
             processAssets();
             processJniLibs();
         }
+
         processProguardTxt();
-        if (configs.isEnabled()) {
-            createDex(configs, processAndroidResources);
-        }
+
+        createDexTask(extension);
     }
 
     /**
@@ -131,7 +115,7 @@ class VariantProcessor {
         manifestsMergeTask.setVariantName(variant.getName());
         manifestsMergeTask.setMainManifestFile(androidExtension.getSourceSets().getByName("main").getManifest().getSrcFile());
         List<File> list = new ArrayList<>();
-        androidArchiveLibraries.forEach(resolvedArtifact -> list.add(((AndroidArchiveLibrary) resolvedArtifact).getManifest()));
+        androidArchiveLibraries.forEach(resolvedArtifact -> list.add((resolvedArtifact).getManifest()));
         manifestsMergeTask.setSecondaryManifestFiles(list);
         manifestsMergeTask.setOutputFile(new File(processManifestTask.getManifestOutputDirectory(), "AndroidManifest.xml"));
         manifestsMergeTask.dependsOn(processManifestTask);
@@ -145,18 +129,7 @@ class VariantProcessor {
         String taskPath = "preBuild";
         Task preBuildTask = project.getTasks().findByPath(taskPath);
         assert preBuildTask != null;
-        preBuildTask.doFirst(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
-            try {
-                String extractedAarPath = ((AndroidArchiveLibrary) resolvedArtifact).getRootFolder().getAbsolutePath();
-                File extractedAar = new File(extractedAarPath);
-                if (!extractedAar.exists()) {
-                    ZipFile zipFile = new ZipFile(resolvedArtifact.getFile());
-                    zipFile.extractAll(extractedAarPath);
-                }
-            } catch (ZipException e) {
-                e.printStackTrace();
-            }
-        }));
+        preBuildTask.finalizedBy(project.getTasks().findByPath(InjectorPlugin.EXTRACT_AARS_TASK_NAME));
     }
 
     /**
@@ -169,14 +142,14 @@ class VariantProcessor {
             throw new RuntimeException("Can not find task " + taskPath);
         }
         androidArchiveLibraries.forEach(resolvedArtifact -> {
-            File resFolder = ((AndroidArchiveLibrary) resolvedArtifact).getResFolder();
+            File resFolder = (resolvedArtifact).getResFolder();
             if (resFolder.exists()) {
                 resourceGenTask.getInputs().dir(resFolder);
             }
         });
         resourceGenTask.doFirst(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
-            if (((AndroidArchiveLibrary) resolvedArtifact).getResFolder().exists()) {
-                androidExtension.getSourceSets().getByName("main").getRes().srcDir(((AndroidArchiveLibrary) resolvedArtifact).getResFolder());
+            if ((resolvedArtifact).getResFolder().exists()) {
+                androidExtension.getSourceSets().getByName("main").getRes().srcDir((resolvedArtifact).getResFolder());
             }
         }));
     }
@@ -187,7 +160,7 @@ class VariantProcessor {
     private void processRSources() {
         androidArchiveLibraries.forEach(resolvedArtifact -> {
             try {
-                RSourceGenerator.generate(((AndroidArchiveLibrary) resolvedArtifact), projectPackageName, project.getBuildDir().getAbsolutePath(), variantName, sourceCompatibilityVersion, targetCompatibilityVersion);
+                RSourceGenerator.generate((resolvedArtifact), projectPackageName, project.getBuildDir().getAbsolutePath(), variantName, sourceCompatibilityVersion, targetCompatibilityVersion);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -203,13 +176,13 @@ class VariantProcessor {
             throw new RuntimeException("Can not find task in variant.getMergeAssets()!");
         }
         androidArchiveLibraries.forEach(resolvedArtifact -> {
-            File assetsFolder = ((AndroidArchiveLibrary) resolvedArtifact).getAssetsFolder();
+            File assetsFolder = resolvedArtifact.getAssetsFolder();
             if ((assetsFolder.exists())) {
                 assetsTask.getInputs().dir(assetsFolder);
             }
         });
         assetsTask.doFirst(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
-            File assetsFolder = ((AndroidArchiveLibrary) resolvedArtifact).getAssetsFolder();
+            File assetsFolder = (resolvedArtifact).getAssetsFolder();
             if (assetsFolder.exists()) {
                 androidExtension.getSourceSets().getByName("main").getAssets().srcDir(assetsFolder);
             }
@@ -226,13 +199,13 @@ class VariantProcessor {
             throw new RuntimeException("Can not find task " + taskPath);
         }
         androidArchiveLibraries.forEach(resolvedArtifact -> {
-            File jniFolder = ((AndroidArchiveLibrary) resolvedArtifact).getJniFolder();
+            File jniFolder = resolvedArtifact.getJniFolder();
             if (jniFolder.exists()) {
                 mergeJniLibsTask.getInputs().dir(jniFolder);
             }
         });
         mergeJniLibsTask.doFirst(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
-            File jniFolder = ((AndroidArchiveLibrary) resolvedArtifact).getJniFolder();
+            File jniFolder = resolvedArtifact.getJniFolder();
             if (jniFolder.exists()) {
                 androidExtension.getSourceSets().getByName("main").getJniLibs().srcDir(jniFolder);
             }
@@ -276,7 +249,7 @@ class VariantProcessor {
         }
         mergeFileTask.doFirst(task -> {
             androidArchiveLibraries.forEach(resolvedArtifact -> {
-                File thirdProguard = ((AndroidArchiveLibrary) resolvedArtifact).getProguardRules();
+                File thirdProguard = resolvedArtifact.getProguardRules();
                 if (!thirdProguard.exists()) {
                     return;
                 }
@@ -286,70 +259,68 @@ class VariantProcessor {
         });
     }
 
-    /**
-     * generate dex file
-     * getting path to current build tools version dx tool(in android sdk)
-     * and executing command dx --dex --output=/outputs/inject/toInject.dex jars
-     */
-    private void createDex(InjectorExtension extension, ProcessAndroidResources processAndroidResources) {
-        Properties properties = new Properties();
-        String sdkDir;
-        if (project.getRootProject().file("local.properties").exists()) {
-            File file = project.getRootProject().file("local.properties");
-            DataInputStream dataIn;
-            try {
-                dataIn = new DataInputStream(new FileInputStream(file));
-                properties.load(dataIn);
-            } catch (IOException e) {
-                e.printStackTrace();
+    private void createDexTask(InjectorExtension extension) {
+        Task createDexesTask = project.getTasks().create("createInject" + variantName + "Dexes", Task.class);
+        createDexesTask.doFirst(task -> {
+            if (!extension.isEnabled()) {
+                return;
             }
-            sdkDir = properties.getProperty("sdk.dir");
-        } else {
-            sdkDir = System.getenv().get("ANDROID_HOME");
-        }
-        String buildToolsVersion = androidExtension.getBuildToolsVersion();
-        String pathToDx = sdkDir + "/build-tools/" + buildToolsVersion + "/dx --dex";
+            processRSources();
+            List<ResolvedArtifact> artifacts = new ArrayList<>(androidArchiveLibraries);
+            artifacts.addAll(jarFiles);
+            Map<String, List<ResolvedArtifact>> dexs = extension.getDexes(artifacts);
+            List<List<String>> dexOptions = new ArrayList<>();
+            String outFilePath = project.getBuildDir().getAbsolutePath() + extension.getDexLocation();
+            dexs.forEach((key, value) -> {
+                if (!value.isEmpty()) {
+                    String outPutDex = outFilePath + key + ".zip";
+                    List<String> dexOption = new ArrayList<>();
+                    dexOption.add("--release");
+                    dexOption.add("--output");
+                    dexOption.add(outPutDex);
+                    value.forEach(resolvedArtifact -> {
+                        if (resolvedArtifact instanceof AndroidArchiveLibrary) {
+                            File classesJar = ((AndroidArchiveLibrary) resolvedArtifact).getClassesJarFile();
+                            if (classesJar.exists()) {
+                                dexOption.add(classesJar.getAbsolutePath());
+                            }
+                        } else {
+                            File classesJar = resolvedArtifact.getFile();
+                            if (classesJar.exists()) {
+                                dexOption.add(classesJar.getAbsolutePath());
+                            }
+                        }
+                    });
+                    dexOptions.add(dexOption);
+                }
+            });
+            File outFile = new File(outFilePath);
+            if (!outFile.exists()) {
+                outFile.mkdirs();
+            }
 
-        String outFile = project.getBuildDir().getAbsolutePath() + Iterables.get(variant.getOutputs(), 0).getDirName() + extension.getDexLocation();
-        List<ResolvedArtifact> artifacts = new ArrayList<>();
-        artifacts.addAll(androidArchiveLibraries);
-        artifacts.addAll(jarFiles);
-        Map<String, List<ResolvedArtifact>> dexs = extension.getDexes(artifacts);
-        List<String> commands = new ArrayList<>();
-        dexs.forEach((key, value) -> {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append(pathToDx);
-            String outPutDex = outFile + key + ".zip";
-            stringBuilder.append(" --output=").append(outPutDex);
-            if (!value.isEmpty()) {
-                value.forEach(resolvedArtifact -> {
-                    if (resolvedArtifact instanceof AndroidArchiveLibrary) {
-                        File classesJar = ((AndroidArchiveLibrary) resolvedArtifact).getClassesJarFile();
-                        if (classesJar.exists()) {
-                            stringBuilder.append(" ").append(classesJar.getAbsolutePath());
-                        }
-                    } else {
-                        File classesJar = resolvedArtifact.getFile();
-                        if (classesJar.exists()) {
-                            stringBuilder.append(" ").append(classesJar.getAbsolutePath());
-                        }
-                    }
-                });
-                commands.add(stringBuilder.toString());
+            for (List<String> dexOption : dexOptions) {
+                D8Command command;
+                ExecutorService executor = ThreadUtils.getExecutorService(-1);
+                try {
+                    command = D8Command.parse(dexOption.toArray(new String[0]), CommandLineOrigin.INSTANCE).build();
+                    D8.run(command, executor);
+                } catch (CompilationFailedException e) {
+                    e.printStackTrace();
+                } finally {
+                    executor.shutdown();
+                }
+                try {
+                    executor.awaitTermination(30, TimeUnit.MINUTES);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         });
-        String taskPath = "assemble" + variantName;
-        Task assembleTask = project.getTasks().findByPath(taskPath);
-        assert assembleTask != null;
-        assembleTask.doLast(task -> commands.forEach(s -> {
-            processRSources();
-            try {
-                (new File(outFile)).mkdirs();
-                Utils.execCommand(s);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
-        assembleTask.dependsOn(processAndroidResources);
+
+        Task extractAARsTask = project.getTasks().findByPath(InjectorPlugin.EXTRACT_AARS_TASK_NAME);
+        Task assembleTask = project.getTasks().findByPath("assemble" + variantName);
+        createDexesTask.dependsOn(extractAARsTask);
+        createDexesTask.dependsOn(assembleTask);
     }
 }

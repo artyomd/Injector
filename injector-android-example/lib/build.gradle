@@ -20,14 +20,12 @@ repositories {
 }
 
 dependencies {
-    inject 'com.airbnb.android:lottie:2.5.1'
-    inject 'com.artyomd.test:dimen-lib:1.0.0-SNAPSHOT'
-    implementation 'com.android.support:appcompat-v7:27.1.0'
+    inject 'com.airbnb.android:lottie:2.5.4'
+    implementation 'com.android.support:appcompat-v7:27.1.1'
 }
 injectConfig {
     enabled = true
     groups = [
             "lottie": ["com.airbnb.android"],
-            "test" : ["com.artyomd.test"]
     ]
 }

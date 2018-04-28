@@ -3,12 +3,9 @@ package com.artyomd.injector.example.lib;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-
-import com.artyomd.test.Lib;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieComposition;
@@ -21,7 +18,6 @@ public class BlankFragment extends Fragment {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Log.d("dimen", String.valueOf(Lib.getDimen(getActivity())));
 	}
 
 	@Override

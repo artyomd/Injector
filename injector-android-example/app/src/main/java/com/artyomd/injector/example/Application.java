@@ -10,17 +10,12 @@ public class Application extends android.app.Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		File dexPath = new File(getFilesDir() + "/dex", "test.zip");
+		File dexPath = new File(getFilesDir() + "/dex", "lottie.zip");
 		if (!dexPath.exists()) {
-			DexUtils.prepareDex(getApplicationContext(), dexPath, "test.zip");
-		}
-		File dexPath2 = new File(getFilesDir() + "/dex", "lottie.zip");
-		if (!dexPath2.exists()) {
-			DexUtils.prepareDex(getApplicationContext(), dexPath2, "lottie.zip");
+			DexUtils.prepareDex(getApplicationContext(), dexPath, "lottie.zip");
 		}
 		List<File> dexs = new ArrayList<>();
 		dexs.add(dexPath);
-		dexs.add(dexPath2);
 		DexUtils.loadDex(getApplicationContext(), dexs);
 	}
 }
