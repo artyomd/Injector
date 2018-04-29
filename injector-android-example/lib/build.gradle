@@ -26,6 +26,6 @@ dependencies {
 injectConfig {
     enabled = true
     groups = [
-            "lottie": ["com.airbnb.android"],
+            "lottie": ["com.airbnb.android"]
     ]
 }

@@ -113,7 +113,7 @@ class VariantProcessor {
         ManifestProcessorTask processManifestTask = Iterables.get(variant.getOutputs(), 0).getProcessManifest();
         InvokeManifestMerger manifestsMergeTask = project.getTasks().create("merge" + variantName + "Manifest", invokeManifestTaskClazz);
         manifestsMergeTask.setVariantName(variant.getName());
-        manifestsMergeTask.setMainManifestFile(androidExtension.getSourceSets().getByName("main").getManifest().getSrcFile());
+        manifestsMergeTask.setMainManifestFile(processManifestTask.getAaptFriendlyManifestOutputFile());
         List<File> list = new ArrayList<>();
         androidArchiveLibraries.forEach(resolvedArtifact -> list.add((resolvedArtifact).getManifest()));
         manifestsMergeTask.setSecondaryManifestFiles(list);
