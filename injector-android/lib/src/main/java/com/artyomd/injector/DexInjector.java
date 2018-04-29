@@ -120,10 +120,10 @@ public final class DexInjector {
 				NoSuchFieldException, InvocationTargetException, NoSuchMethodException,
 				IOException {
 			/* The patched class loader is expected to be a descendant of
-             * dalvik.system.BaseDexClassLoader. We modify its
-             * dalvik.system.DexPathList pathList field to append additional DEX
-             * file entries.
-             */
+			 * dalvik.system.BaseDexClassLoader. We modify its
+			 * dalvik.system.DexPathList pathList field to append additional DEX
+			 * file entries.
+			 */
 			Field pathListField = findField(loader, "pathList");
 			Object dexPathList = pathListField.get(loader);
 			ArrayList<IOException> suppressedExceptions = new ArrayList<>();
@@ -254,11 +254,11 @@ public final class DexInjector {
 				throws IOException, SecurityException, IllegalArgumentException,
 				ClassNotFoundException, NoSuchMethodException, InstantiationException,
 				IllegalAccessException, InvocationTargetException, NoSuchFieldException {
-            /* The patched class loader is expected to be a descendant of
-             * dalvik.system.BaseDexClassLoader. We modify its
-             * dalvik.system.DexPathList pathList field to append additional DEX
-             * file entries.
-             */
+			/* The patched class loader is expected to be a descendant of
+			 * dalvik.system.BaseDexClassLoader. We modify its
+			 * dalvik.system.DexPathList pathList field to append additional DEX
+			 * file entries.
+			 */
 			Field pathListField = findField(loader, "pathList");
 			Object dexPathList = pathListField.get(loader);
 			Object[] elements = new V14().makeDexElements(additionalClassPathEntries);
@@ -327,11 +327,11 @@ public final class DexInjector {
 		                    List<? extends File> additionalClassPathEntries)
 				throws IllegalArgumentException, IllegalAccessException,
 				NoSuchFieldException, IOException {
-            /* The patched class loader is expected to be a descendant of
-             * dalvik.system.DexClassLoader. We modify its
-             * fields mPaths, mFiles, mZips and mDexs to append additional DEX
-             * file entries.
-             */
+			/* The patched class loader is expected to be a descendant of
+			 * dalvik.system.DexClassLoader. We modify its
+			 * fields mPaths, mFiles, mZips and mDexs to append additional DEX
+			 * file entries.
+			 */
 			int extraSize = additionalClassPathEntries.size();
 			Field pathField = findField(loader, "path");
 			StringBuilder path = new StringBuilder((String) pathField.get(loader));

@@ -32,7 +32,9 @@ public class BlankFragment extends Fragment {
 		LottieComposition.Factory.fromAssetFileName(getActivity(), "tick.json", new OnCompositionLoadedListener() {
 			@Override
 			public void onCompositionLoaded(@Nullable LottieComposition composition) {
-				lottieAnimationView.setComposition(composition);
+				if (composition != null) {
+					lottieAnimationView.setComposition(composition);
+				}
 				lottieAnimationView.playAnimation();
 			}
 		});
