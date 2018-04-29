@@ -6,6 +6,7 @@ import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -18,19 +19,21 @@ import java.util.zip.ZipFile;
 import dalvik.system.DexFile;
 
 public final class DexInjector {
-	static final String TAG = DexInjector.class.getSimpleName();
+	private static final String TAG = DexInjector.class.getSimpleName();
+	private static final String DEX_SUFFIX = "dex";
 
 	private DexInjector() {
 	}
 
 	public static void installSecondaryDexes(ClassLoader loader, File dexDir, List<? extends File> files)
 			throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException,
-			InvocationTargetException, NoSuchMethodException, IOException {
+			InvocationTargetException, NoSuchMethodException, IOException, SecurityException,
+			ClassNotFoundException, InstantiationException {
 		if (!files.isEmpty()) {
 			if (Build.VERSION.SDK_INT >= 19) {
 				V19.install(loader, files, dexDir);
 			} else if (Build.VERSION.SDK_INT >= 14) {
-				V14.install(loader, files, dexDir);
+				V14.install(loader, files);
 			} else {
 				V4.install(loader, files);
 			}
@@ -110,16 +113,17 @@ public final class DexInjector {
 	 * Installer for platform versions 19.
 	 */
 	private static final class V19 {
-		private static void install(ClassLoader loader,
-		                            List<? extends File> additionalClassPathEntries,
-		                            File optimizedDirectory)
+		static void install(ClassLoader loader,
+		                    List<? extends File> additionalClassPathEntries,
+		                    File optimizedDirectory)
 				throws IllegalArgumentException, IllegalAccessException,
-				NoSuchFieldException, InvocationTargetException, NoSuchMethodException {
+				NoSuchFieldException, InvocationTargetException, NoSuchMethodException,
+				IOException {
 			/* The patched class loader is expected to be a descendant of
-             * dalvik.system.BaseDexClassLoader. We modify its
-             * dalvik.system.DexPathList pathList field to append additional DEX
-             * file entries.
-             */
+			 * dalvik.system.BaseDexClassLoader. We modify its
+			 * dalvik.system.DexPathList pathList field to append additional DEX
+			 * file entries.
+			 */
 			Field pathListField = findField(loader, "pathList");
 			Object dexPathList = pathListField.get(loader);
 			ArrayList<IOException> suppressedExceptions = new ArrayList<>();
@@ -148,6 +152,7 @@ public final class DexInjector {
 					dexElementsSuppressedExceptions = combined;
 				}
 				suppressedExceptionsField.set(dexPathList, dexElementsSuppressedExceptions);
+				throw new IOException("I/O exception during makeDexElement", suppressedExceptions.get(0));
 			}
 		}
 
@@ -172,33 +177,145 @@ public final class DexInjector {
 	 * Installer for platform versions 14, 15, 16, 17 and 18.
 	 */
 	private static final class V14 {
-		private static void install(ClassLoader loader,
-		                            List<? extends File> additionalClassPathEntries,
-		                            File optimizedDirectory)
-				throws IllegalArgumentException, IllegalAccessException,
-				NoSuchFieldException, InvocationTargetException, NoSuchMethodException {
-            /* The patched class loader is expected to be a descendant of
-             * dalvik.system.BaseDexClassLoader. We modify its
-             * dalvik.system.DexPathList pathList field to append additional DEX
-             * file entries.
-             */
-			Field pathListField = findField(loader, "pathList");
-			Object dexPathList = pathListField.get(loader);
-			expandFieldArray(dexPathList, "dexElements", makeDexElements(dexPathList,
-					new ArrayList<>(additionalClassPathEntries), optimizedDirectory));
+		private interface ElementConstructor {
+			Object newInstance(File file, DexFile dex)
+					throws IllegalArgumentException, InstantiationException,
+					IllegalAccessException, InvocationTargetException, IOException;
 		}
 
 		/**
-		 * A wrapper around
-		 * {@code private static final dalvik.system.DexPathList#makeDexElements}.
+		 * Applies for ICS and early JB (initial release and MR1).
 		 */
-		private static Object[] makeDexElements(
-				Object dexPathList, ArrayList<File> files, File optimizedDirectory)
-				throws IllegalAccessException, InvocationTargetException,
-				NoSuchMethodException {
-			Method makeDexElements =
-					findMethod(dexPathList, "makeDexElements", ArrayList.class, File.class);
-			return (Object[]) makeDexElements.invoke(dexPathList, files, optimizedDirectory);
+		private static class ICSElementConstructor implements ElementConstructor {
+			private final Constructor<?> elementConstructor;
+
+			ICSElementConstructor(Class<?> elementClass)
+					throws SecurityException, NoSuchMethodException {
+				elementConstructor = elementClass.getConstructor(File.class, ZipFile.class, DexFile.class);
+				elementConstructor.setAccessible(true);
+			}
+
+			@Override
+			public Object newInstance(File file, DexFile dex)
+					throws IllegalArgumentException, InstantiationException,
+					IllegalAccessException, InvocationTargetException, IOException {
+				return elementConstructor.newInstance(file, new ZipFile(file), dex);
+			}
+		}
+
+		/**
+		 * Applies for some intermediate JB (MR1.1).
+		 * <p>
+		 * See Change-Id: I1a5b5d03572601707e1fb1fd4424c1ae2fd2217d
+		 */
+		private static class JBMR11ElementConstructor implements ElementConstructor {
+			private final Constructor<?> elementConstructor;
+
+			JBMR11ElementConstructor(Class<?> elementClass)
+					throws SecurityException, NoSuchMethodException {
+				elementConstructor = elementClass.getConstructor(File.class, File.class, DexFile.class);
+				elementConstructor.setAccessible(true);
+			}
+
+			@Override
+			public Object newInstance(File file, DexFile dex)
+					throws IllegalArgumentException, InstantiationException,
+					IllegalAccessException, InvocationTargetException {
+				return elementConstructor.newInstance(file, file, dex);
+			}
+		}
+
+		/**
+		 * Applies for latest JB (MR2).
+		 * <p>
+		 * See Change-Id: Iec4dca2244db9c9c793ac157e258fd61557a7a5d
+		 */
+		private static class JBMR2ElementConstructor implements ElementConstructor {
+			private final Constructor<?> elementConstructor;
+
+			JBMR2ElementConstructor(Class<?> elementClass)
+					throws SecurityException, NoSuchMethodException {
+				elementConstructor = elementClass.getConstructor(File.class, Boolean.TYPE, File.class, DexFile.class);
+				elementConstructor.setAccessible(true);
+			}
+
+			@Override
+			public Object newInstance(File file, DexFile dex)
+					throws IllegalArgumentException, InstantiationException,
+					IllegalAccessException, InvocationTargetException {
+				return elementConstructor.newInstance(file, Boolean.FALSE, file, dex);
+			}
+		}
+
+		private final ElementConstructor elementConstructor;
+
+		static void install(ClassLoader loader,
+		                    List<? extends File> additionalClassPathEntries)
+				throws IOException, SecurityException, IllegalArgumentException,
+				ClassNotFoundException, NoSuchMethodException, InstantiationException,
+				IllegalAccessException, InvocationTargetException, NoSuchFieldException {
+			/* The patched class loader is expected to be a descendant of
+			 * dalvik.system.BaseDexClassLoader. We modify its
+			 * dalvik.system.DexPathList pathList field to append additional DEX
+			 * file entries.
+			 */
+			Field pathListField = findField(loader, "pathList");
+			Object dexPathList = pathListField.get(loader);
+			Object[] elements = new V14().makeDexElements(additionalClassPathEntries);
+			try {
+				expandFieldArray(dexPathList, "dexElements", elements);
+			} catch (NoSuchFieldException e) {
+				// dexElements was renamed pathElements for a short period during JB development,
+				// eventually it was renamed back shortly after.
+				Log.w(TAG, "Failed find field 'dexElements' attempting 'pathElements'", e);
+				expandFieldArray(dexPathList, "pathElements", elements);
+			}
+		}
+
+		private V14() throws ClassNotFoundException, SecurityException, NoSuchMethodException {
+			ElementConstructor constructor;
+			Class<?> elementClass = Class.forName("dalvik.system.DexPathList$Element");
+			try {
+				constructor = new ICSElementConstructor(elementClass);
+			} catch (NoSuchMethodException e1) {
+				try {
+					constructor = new JBMR11ElementConstructor(elementClass);
+				} catch (NoSuchMethodException e2) {
+					constructor = new JBMR2ElementConstructor(elementClass);
+				}
+			}
+			this.elementConstructor = constructor;
+		}
+
+		/**
+		 * An emulation of {@code private static final dalvik.system.DexPathList#makeDexElements}
+		 * accepting only extracted secondary dex files.
+		 * OS version is catching IOException and just logging some of them, this version is letting
+		 * them through.
+		 */
+		private Object[] makeDexElements(List<? extends File> files)
+				throws IOException, SecurityException, IllegalArgumentException,
+				InstantiationException, IllegalAccessException, InvocationTargetException {
+			Object[] elements = new Object[files.size()];
+			for (int i = 0; i < elements.length; i++) {
+				File file = files.get(i);
+				elements[i] = elementConstructor.newInstance(file, DexFile.loadDex(file.getPath(), optimizedPathFor(file), 0));
+			}
+			return elements;
+		}
+
+		/**
+		 * Converts a zip file path of an extracted secondary dex to an output file path for an
+		 * associated optimized dex file.
+		 */
+		private static String optimizedPathFor(File path) {
+			// Any reproducible name ending with ".dex" should do but lets keep the same name
+			// as DexPathList.optimizedPathFor
+			File optimizedDirectory = path.getParentFile();
+			String fileName = path.getName();
+			String optimizedFileName = fileName.substring(0, fileName.length() - DEX_SUFFIX.length()) + DEX_SUFFIX;
+			File result = new File(optimizedDirectory, optimizedFileName);
+			return result.getPath();
 		}
 	}
 
@@ -206,15 +323,15 @@ public final class DexInjector {
 	 * Installer for platform versions 4 to 13.
 	 */
 	private static final class V4 {
-		private static void install(ClassLoader loader,
-		                            List<? extends File> additionalClassPathEntries)
+		static void install(ClassLoader loader,
+		                    List<? extends File> additionalClassPathEntries)
 				throws IllegalArgumentException, IllegalAccessException,
 				NoSuchFieldException, IOException {
-            /* The patched class loader is expected to be a descendant of
-             * dalvik.system.DexClassLoader. We modify its
-             * fields mPaths, mFiles, mZips and mDexs to append additional DEX
-             * file entries.
-             */
+			/* The patched class loader is expected to be a descendant of
+			 * dalvik.system.DexClassLoader. We modify its
+			 * fields mPaths, mFiles, mZips and mDexs to append additional DEX
+			 * file entries.
+			 */
 			int extraSize = additionalClassPathEntries.size();
 			Field pathField = findField(loader, "path");
 			StringBuilder path = new StringBuilder((String) pathField.get(loader));

@@ -16,16 +16,16 @@ android {
 repositories {
     mavenCentral()
     google()
+    maven { url "https://mymavenrepo.com/repo/QdmWCKUvofW6L7vIcGYp/" }
 }
 
 dependencies {
-    inject 'com.airbnb.android:lottie:2.5.0-rc1'
-    implementation 'com.android.support:appcompat-v7:27.0.2'
+    inject 'com.airbnb.android:lottie:2.5.4'
+    implementation 'com.android.support:appcompat-v7:27.1.1'
 }
-
 injectConfig {
     enabled = true
     groups = [
-            "lottie.dex": ["com.airbnb.android"]
+            "lottie": ["com.airbnb.android"]
     ]
 }

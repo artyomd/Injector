@@ -27,9 +27,10 @@ import java.util.Map;
 
 public class RSourceGenerator {
 
-    public static void generate(@Nonnull AndroidArchiveLibrary androidLibrary, JavaVersion projectSourceVersion, JavaVersion projectTargetVersion) throws IOException {
+    public static void generate(@Nonnull AndroidArchiveLibrary androidLibrary, @Nonnull String libPackageName, @Nonnull String buildDir, @Nonnull String variant, JavaVersion projectSourceVersion, JavaVersion projectTargetVersion) throws IOException {
         File symbolFile = androidLibrary.getSymbolFile();
         File manifestFile = androidLibrary.getManifest();
+        File rFile = new File(buildDir + "/generated/source/r/" + variant.toLowerCase() + "/" + libPackageName.replace(".", "/") + "/R.java");
         if (!symbolFile.exists()) {
             return;
         }
@@ -80,11 +81,14 @@ public class RSourceGenerator {
                 if (typeName == null) {
                     throw new RuntimeException("Unknown class type in " + symbolFile);
                 }
-                FieldSpec fieldSpec = FieldSpec.builder(typeName, item.getName())
-                        .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-                        .initializer(item.getValue())
-                        .build();
-                icb.addField(fieldSpec);
+                FieldSpec.Builder fieldSpecBuilder = FieldSpec.builder(typeName, item.getName())
+                        .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL);
+                if (Utils.contains(rFile, " " + item.getName() + " ")) {
+                    fieldSpecBuilder.initializer(libPackageName + ".R." + item.getClazz() + "." + item.getName());
+                } else {
+                    fieldSpecBuilder.initializer(item.getValue());
+                }
+                icb.addField(fieldSpecBuilder.build());
             }
             classBuilder.addType(icb.build());
         }
@@ -106,6 +110,7 @@ public class RSourceGenerator {
         for (File file : files) {
             javac.append(" ").append(file.getAbsolutePath());
         }
+        javac.append(" ").append(rFile.getAbsolutePath());
         Utils.execCommand(javac.toString());
         //inject R$...class files into class.jar
         Collection<File> classes = FileUtils.listFiles(outputDir, new String[]{"class"}, true);
@@ -119,7 +124,6 @@ public class RSourceGenerator {
             injectCommandBuilder.append(path.substring(path.indexOf("/R") + 3));
         }
         Utils.execCommand("sh", cdR, injectCommandBuilder.toString());
-
     }
 
     private static class TextSymbolItem {

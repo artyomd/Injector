@@ -1,9 +1,9 @@
 plugins {
     id "maven"
+    id "com.android.library"
 }
-apply plugin: 'com.android.library'
 
-apply from: '../../params.gradle'
+//apply from: '../../params.gradle'
 
 
 android {
@@ -12,44 +12,45 @@ android {
         minSdkVersion 15
         targetSdkVersion 27
     }
+}
 
-    configurations {
-        deployerJars
-    }
+configurations {
+    deployerJars
+}
 
-    task javadoc(type: Javadoc) {
-        source = android.sourceSets.main.java.srcDirs
-        classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-        destinationDir = file("../javadoc/")
-        failOnError false
-    }
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    destinationDir = file("../javadoc/")
+    failOnError false
+}
 
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
-        from javadoc.getDestinationDir()
-    }
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.getDestinationDir()
+}
 
-    task androidSourcesJar(type: Jar) {
-        classifier = 'sources'
-        from android.sourceSets.main.java.srcDirs
-    }
+task androidSourcesJar(type: Jar) {
+    classifier = 'sources'
+    from android.sourceSets.main.java.srcDirs
+}
 
-    artifacts {
-        archives androidSourcesJar
-        archives javadocJar
-    }
+artifacts {
+    archives androidSourcesJar
+    archives javadocJar
+}
 
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                configuration = configurations.deployerJars
-                repository(url: repositoryUrl) {
-                    authentication(userName: username, password: password)
-                }
-                pom.version = versionName
-                pom.artifactId = "injector-android"
-                pom.groupId = "com.artyomd.injector"
+/*
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            configuration = configurations.deployerJars
+            repository(url: repositoryUrl) {
+                authentication(userName: username, password: password)
             }
+            pom.version = versionName
+            pom.artifactId = "injector-android"
+            pom.groupId = "com.artyomd.injector"
         }
     }
-}
+}*/

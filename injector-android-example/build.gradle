@@ -8,8 +8,8 @@ buildscript {
         maven { url "https://mymavenrepo.com/repo/QdmWCKUvofW6L7vIcGYp/" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.1'
-        classpath 'com.artyomd.injector:injector:0.2.1'
+        classpath 'com.android.tools.build:gradle:3.1.2'
+        classpath 'com.artyomd.injector:injector:0.3'
     }
 }
 

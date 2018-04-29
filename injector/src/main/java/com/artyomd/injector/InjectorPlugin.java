@@ -3,25 +3,29 @@ package com.artyomd.injector;
 import com.android.build.gradle.AppExtension;
 import com.android.build.gradle.LibraryExtension;
 import com.android.build.gradle.api.BaseVariant;
+import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.DependencyResolutionListener;
-import org.gradle.api.artifacts.ResolvableDependencies;
-import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.Task;
+import org.gradle.api.artifacts.*;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.io.File;
+import java.util.*;
+import java.util.function.Consumer;
 
 public class InjectorPlugin implements Plugin<Project> {
+
+    public static final String EXTRACT_AARS_TASK_NAME = "extractAARs";
 
     private Project project;
     private Configuration injectConf;
 
     private InjectorExtension extension;
-    private Set<ResolvedArtifact> artifacts;
+    private Set<ResolvedArtifact> jars;
+    private Set<AndroidArchiveLibrary> aars;
+
 
     @Override
     public void apply(@NotNull Project project) {
@@ -30,6 +34,9 @@ public class InjectorPlugin implements Plugin<Project> {
         createConfiguration();
         project.afterEvaluate(project1 -> {
             resolveArtifacts();
+            removeOldVersions(jars);
+            removeOldVersions(aars);
+            createExtractAARsTask();
             Object extension = project1.getExtensions().getByName("android");
             if (extension instanceof LibraryExtension) {
                 ((LibraryExtension) extension).getLibraryVariants().all(this::processVariant);
@@ -37,6 +44,22 @@ public class InjectorPlugin implements Plugin<Project> {
                 ((AppExtension) extension).getApplicationVariants().all(this::processVariant);
             }
         });
+    }
+
+    public void createExtractAARsTask() {
+        Task extractAars = project.getTasks().create(EXTRACT_AARS_TASK_NAME, Task.class);
+        extractAars.doFirst(task -> aars.forEach((Consumer<ResolvedArtifact>) resolvedArtifact -> {
+            try {
+                String extractedAarPath = ((AndroidArchiveLibrary) resolvedArtifact).getRootFolder().getAbsolutePath();
+                File extractedAar = new File(extractedAarPath);
+                if (!extractedAar.exists()) {
+                    ZipFile zipFile = new ZipFile(resolvedArtifact.getFile());
+                    zipFile.extractAll(extractedAarPath);
+                }
+            } catch (ZipException e) {
+                e.printStackTrace();
+            }
+        }));
     }
 
     private void createConfiguration() {
@@ -47,7 +70,7 @@ public class InjectorPlugin implements Plugin<Project> {
             @Override
             public void beforeResolve(@NotNull ResolvableDependencies dependencies) {
                 injectConf.getDependencies().forEach(dependency -> {
-                    if  (extension.checkGroup(dependency.getGroup()) && extension.checkName(dependency.getName())) {
+                    if (extension.checkGroup(dependency.getGroup()) && extension.checkName(dependency.getName())) {
                         project.getDependencies().add("compileOnly", dependency);
                     } else if (!extension.checkForceExcluded(dependency)) {
                         project.getDependencies().add("implementation", dependency);
@@ -64,31 +87,55 @@ public class InjectorPlugin implements Plugin<Project> {
     }
 
     private void resolveArtifacts() {
-        Set<ResolvedArtifact> set = new HashSet<>();
+        Set<ResolvedArtifact> jars = new HashSet<>();
+        Set<AndroidArchiveLibrary> aars = new HashSet<>();
         injectConf.getResolvedConfiguration().getResolvedArtifacts().forEach(resolvedArtifact -> {
-            if ((("aar".equals(resolvedArtifact.getType()) || "jar".equals(resolvedArtifact.getType())) && extension.checkArtifact(resolvedArtifact) && !extension.checkForceExcluded(resolvedArtifact))) {
+            if (extension.checkArtifact(resolvedArtifact) && !extension.checkForceExcluded(resolvedArtifact)) {
                 System.out.println("inject-->[injection detected][" + resolvedArtifact.getType() + ']' + resolvedArtifact.getModuleVersion().getId());
-                set.add(resolvedArtifact);
+                if ("jar".equals(resolvedArtifact.getType())) {
+                    jars.add(resolvedArtifact);
+                } else if ("aar".equals(resolvedArtifact.getType())) {
+                    aars.add(new AndroidArchiveLibrary(project, resolvedArtifact));
+                }
             }
         });
-        artifacts = Collections.unmodifiableSet(set);
+        this.jars = Collections.unmodifiableSet(jars);
+        this.aars = Collections.unmodifiableSet(aars);
     }
 
     private void processVariant(BaseVariant variant) {
         VariantProcessor processor = new VariantProcessor(project, variant);
-        artifacts.forEach(resolvedArtifact -> {
-            if ("aar".equals(resolvedArtifact.getType())) {
-                if (extension.checkArtifact(resolvedArtifact)) {
-                    AndroidArchiveLibrary library = new AndroidArchiveLibrary(project, resolvedArtifact);
-                    processor.addAndroidArchiveLibrary(library);
-                }
-            }
-            if ("jar".equals(resolvedArtifact.getType())) {
-                if (extension.checkArtifact(resolvedArtifact)) {
-                    processor.addJarFile(resolvedArtifact);
-                }
-            }
-        });
+        processor.setJarFiles(jars);
+        processor.setAndroidArchiveLibraries(aars);
         processor.processVariant(extension);
+    }
+
+
+    private static void removeOldVersions(Set<? extends ResolvedArtifact> artifactsList) {
+        Map<String, Map<String, ResolvedArtifact>> artifacts = new HashMap<>();
+        for (ResolvedArtifact artifact : artifactsList) {
+            ModuleVersionIdentifier id = artifact.getModuleVersion().getId();
+            String name = id.getName();
+            String group = id.getGroup();
+            String version = id.getVersion();
+            if (artifacts.containsKey(group)) {
+                Map<String, ResolvedArtifact> names = artifacts.get(group);
+                if (names.containsKey(name)) {
+                    ResolvedArtifact old = names.get(name);
+                    if (Utils.cmp(old.getModuleVersion().getId().getVersion(), version)) {
+                        names.put(name, artifact);
+                        artifactsList.remove(old);
+                    } else {
+                        artifactsList.remove(artifact);
+                    }
+                } else {
+                    names.put(name, artifact);
+                }
+            } else {
+                Map<String, ResolvedArtifact> names = new HashMap<>();
+                names.put(name, artifact);
+                artifacts.put(group, names);
+            }
+        }
     }
 }
