@@ -1,4 +1,4 @@
-package com.artyomd.injector.example.lib;
+package app.artyomd.injector.example.lib;
 
 import android.app.Fragment;
 import android.os.Bundle;

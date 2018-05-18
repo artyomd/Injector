@@ -1,4 +1,4 @@
-package com.artyomd.injector;
+package app.artyomd.injector;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;

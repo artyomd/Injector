@@ -1,4 +1,4 @@
-package com.artyomd.injector;
+package app.artyomd.injector;
 
 import android.os.Build;
 import android.util.Log;

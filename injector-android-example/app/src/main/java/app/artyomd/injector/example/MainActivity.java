@@ -1,4 +1,4 @@
-package com.artyomd.injector.example;
+package app.artyomd.injector.example;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -6,7 +6,7 @@ import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.widget.FrameLayout;
 
-import com.artyomd.injector.example.lib.BlankFragment;
+import app.artyomd.injector.example.lib.BlankFragment;
 
 public class MainActivity extends Activity {
 
