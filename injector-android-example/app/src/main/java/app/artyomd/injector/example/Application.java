@@ -1,6 +1,6 @@
-package com.artyomd.injector.example;
+package app.artyomd.injector.example;
 
-import com.artyomd.injector.DexUtils;
+import app.artyomd.injector.DexUtils;
 
 import java.io.File;
 import java.util.ArrayList;

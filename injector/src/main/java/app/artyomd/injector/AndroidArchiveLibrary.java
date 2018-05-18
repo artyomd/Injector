@@ -1,4 +1,4 @@
-package com.artyomd.injector;
+package app.artyomd.injector;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;

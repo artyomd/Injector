@@ -1,4 +1,4 @@
-package com.artyomd.injector;
+package app.artyomd.injector;
 
 import com.android.build.gradle.BaseExtension;
 import com.android.build.gradle.api.BaseVariant;

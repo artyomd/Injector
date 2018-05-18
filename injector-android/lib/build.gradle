@@ -40,17 +40,17 @@ artifacts {
     archives javadocJar
 }
 
-/*
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            configuration = configurations.deployerJars
-            repository(url: repositoryUrl) {
-                authentication(userName: username, password: password)
-            }
-            pom.version = versionName
-            pom.artifactId = "injector-android"
-            pom.groupId = "com.artyomd.injector"
-        }
-    }
-}*/
+
+//uploadArchives {
+//    repositories {
+//        mavenDeployer {
+//            configuration = configurations.deployerJars
+//            repository(url: repositoryUrl) {
+//                authentication(userName: username, password: password)
+//            }
+//            pom.version = versionName
+//            pom.artifactId = "injector-android"
+//            pom.groupId = "app.artyomd.injector"
+//        }
+//    }
+//}

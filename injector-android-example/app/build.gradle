@@ -4,7 +4,7 @@ android {
     compileSdkVersion 27
 
     defaultConfig {
-        applicationId "com.artyomd.inject.example"
+        applicationId "app.artyomd.inject.example"
         minSdkVersion 16
         targetSdkVersion 27
         versionCode 1
@@ -24,5 +24,5 @@ repositories {
 
 dependencies {
     implementation project(":lib")
-    implementation "com.artyomd.injector:injector-android:0.3@aar"
+    implementation "app.artyomd.injector:injector-android:0.3@aar"
 }
