@@ -1,9 +1,10 @@
 plugins {
     id "maven"
+    id "signing"
     id "java"
 }
 
-//apply from: '../params.gradle'
+apply from: '../versions.gradle'
 
 sourceCompatibility = 1.8
 
@@ -12,7 +13,6 @@ repositories {
     jcenter()
     google()
 }
-
 
 dependencies {
     compile gradleApi()
@@ -23,15 +23,89 @@ dependencies {
     compile 'com.android.tools.build:gradle:3.1.2'
 }
 
-//uploadArchives {
-//    repositories {
-//        mavenDeployer {
-//            repository(url: repositoryUrl) {
-//                authentication(userName: username, password: password)
-//            }
-//            pom.version = versionName
-//            pom.artifactId = "injector"
-//            pom.groupId = "app.artyomd.injector"
-//        }
-//    }
-//}
+def isReleaseBuild() {
+    return !VERSION_NAME.contains("SNAPSHOT")
+}
+
+def getReleaseRepositoryUrl() {
+    return hasProperty('NEXUS_RELEASE_REPOSITORY_URL') ? NEXUS_RELEASE_REPOSITORY_URL : ""
+}
+
+def getSnapshotRepositoryUrl() {
+    return hasProperty('NEXUS_SNAPSHOT_REPOSITORY_URL') ? NEXUS_SNAPSHOT_REPOSITORY_URL : ""
+}
+
+def getRepositoryUsername() {
+    return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : ""
+}
+
+def getRepositoryPassword() {
+    return hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : ""
+}
+
+
+signing {
+    required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
+    sign configurations.archives
+}
+
+task packageJavadoc(type: Jar, dependsOn: 'javadoc') {
+    from javadoc.destinationDir
+    classifier = 'javadoc'
+}
+
+task packageSources(type: Jar, dependsOn: 'classes') {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+artifacts {
+    archives packageJavadoc
+    archives packageSources
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: getReleaseRepositoryUrl()) {
+                authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
+            }
+            snapshotRepository(url: getSnapshotRepositoryUrl()) {
+                authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
+            }
+            pom.version = VERSION_NAME
+            pom.artifactId = POM_INJECTOR_NAME
+            pom.groupId = GROUP
+
+            pom.project {
+                name POM_INJECTOR_NAME
+                packaging POM_JAR_PACKAGING
+                description POM_INJECTOR_DESCRIPTION
+                url POM_URL
+
+                scm {
+                    url POM_SCM_URL
+                    connection POM_SCM_CONNECTION
+                    developerConnection POM_SCM_DEV_CONNECTION
+                }
+
+                licenses {
+                    license {
+                        name POM_LICENCE_NAME
+                        url POM_LICENCE_URL
+                        distribution POM_LICENCE_DIST
+                    }
+                }
+
+                developers {
+                    developer {
+                        id POM_DEVELOPER_ID
+                        name POM_DEVELOPER_NAME
+                    }
+                }
+            }
+        }
+    }
+}

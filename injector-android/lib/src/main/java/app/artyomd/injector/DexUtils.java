@@ -15,6 +15,8 @@ public class DexUtils {
 	private static final String TAG = DexUtils.class.getSimpleName();
 
 	/**
+	 * load dex
+	 *
 	 * @param context context
 	 * @param list    list with dex files
 	 */

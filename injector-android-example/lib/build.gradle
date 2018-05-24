@@ -1,5 +1,5 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.artyomd.injector'
+apply plugin: 'app.artyomd.injector'
 
 android {
     compileSdkVersion 27
@@ -11,12 +11,6 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-}
-
-repositories {
-    mavenCentral()
-    google()
-    maven { url "https://mymavenrepo.com/repo/QdmWCKUvofW6L7vIcGYp/" }
 }
 
 dependencies {

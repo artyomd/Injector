@@ -1,0 +1,22 @@
+project.ext {
+    VERSION_NAME = "0.3"
+    GROUP = "app.artyomd.injector"
+
+    POM_INJECTOR_NAME = "injector"
+    POM_INJECTOR_ANDROID_NAME = "injector-android"
+    POM_JAR_PACKAGING = "jar"
+    POM_AAR_PACKAGING = "aar"
+    POM_INJECTOR_DESCRIPTION = "Gradle plugin for android which makes easier to inject aar libraries into project."
+    POM_INJECTOR_ANDROID_DESCRIPTION = "Android helper lib for loading dex files."
+
+    POM_URL = "https://github.com/artyomd/Injector.git"
+    POM_SCM_URL = "https://github.com/artyomd/Injector.git"
+    POM_SCM_CONNECTION = "scm:git@github.com:artyomd/Injector.git"
+    POM_SCM_DEV_CONNECTION = "scm:git@github.com:artyomd/Injector.git"
+
+    POM_LICENCE_NAME = "The Apache Software License, Version 2.0"
+    POM_LICENCE_URL = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+    POM_LICENCE_DIST = "repo"
+    POM_DEVELOPER_ID = "artyomd"
+    POM_DEVELOPER_NAME = "Artyom Dangizyan"
+}

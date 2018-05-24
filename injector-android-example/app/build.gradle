@@ -1,5 +1,7 @@
 apply plugin: 'com.android.application'
 
+apply from: '../../versions.gradle'
+
 android {
     compileSdkVersion 27
 
@@ -18,11 +20,7 @@ android {
     }
 }
 
-repositories {
-    maven { url "https://mymavenrepo.com/repo/QdmWCKUvofW6L7vIcGYp/" }
-}
-
 dependencies {
     implementation project(":lib")
-    implementation "app.artyomd.injector:injector-android:0.3@aar"
+    implementation "app.artyomd.injector:injector-android:${VERSION_NAME}@aar"
 }
