@@ -1,0 +1,10 @@
+language: android
+android:
+        components:
+                - platform-tools
+                - build-tools-27.0.3
+                - android-27
+script:
+        - cd injector && ./gradlew build
+        - cd ../injector-android && ./gradlew build
+        - cd ../injector-android-example && ./gradlew build
