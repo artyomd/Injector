@@ -1,4 +1,5 @@
 # Injector
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f9c01ceb05ef4949a9c9869f22a5524d)](https://app.codacy.com/app/artyomd/Injector?utm_source=github.com&utm_medium=referral&utm_content=artyomd/Injector&utm_campaign=badger)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/app.artyomd.injector/injector/badge.svg)](https://maven-badges.herokuapp.com/maven-central/app.artyomd.injector/injector)
 <a href='https://travis-ci.org/artyomd/Injector/builds'><img src='https://travis-ci.org/artyomd/Injector.svg?branch=master'></a>
 
