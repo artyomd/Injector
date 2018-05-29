@@ -1,5 +1,5 @@
 project.ext {
-    VERSION_NAME = "0.3"
+    VERSION_NAME = "0.3.1-SNAPSHOT"
     GROUP = "app.artyomd.injector"
 
     POM_INJECTOR_NAME = "injector"
@@ -19,4 +19,7 @@ project.ext {
     POM_LICENCE_DIST = "repo"
     POM_DEVELOPER_ID = "artyomd"
     POM_DEVELOPER_NAME = "Artyom Dangizyan"
+
+    NEXUS_SNAPSHOT_REPOSITORY_URL = "https://oss.sonatype.org/content/repositories/snapshots"
+    NEXUS_RELEASE_REPOSITORY_URL = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
 }

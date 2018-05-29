@@ -12,6 +12,9 @@ android {
         versionCode 1
         versionName "1.0"
     }
+    lintOptions {
+        abortOnError false
+    }
     buildTypes {
         release {
             minifyEnabled true
@@ -22,5 +25,5 @@ android {
 
 dependencies {
     implementation project(":lib")
-    implementation "app.artyomd.injector:injector-android:${VERSION_NAME}@aar"
+    implementation project(":injector-android")
 }

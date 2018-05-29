@@ -1,1 +1,3 @@
 include ':app', ':lib'
+include ':injector-android'
+project(':injector-android').projectDir = new File("../injector-android")

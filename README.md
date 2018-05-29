@@ -1,4 +1,7 @@
 # Injector
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/app.artyomd.injector/injector/badge.svg)](https://maven-badges.herokuapp.com/maven-central/app.artyomd.injector/injector)
+<a href='https://travis-ci.org/artyomd/Injector/builds'><img src='https://travis-ci.org/artyomd/Injector.svg?branch=master'></a>
+
 Injector is a gradle plugin for android projects which helps making third party android libraries downloadable. Injector supports android gradle plugin **3.1.0+**.
 # How it works
 Injector plugin extracts all aar files into build/exploded-aar directory then, merges all manifests to your project's manifest, copies all resources into your project's resource dir, generates R.java for aar libs, compiles them and injects classes into lib's class.jar and then creates dex from jars.
