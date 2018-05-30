@@ -13,6 +13,7 @@ import java.util.List;
 
 public class DexUtils {
 	private static final String TAG = DexUtils.class.getSimpleName();
+	private static final int BUFFER_SIZE = 8 * 1024;
 
 	/**
 	 * load dex
@@ -28,8 +29,6 @@ public class DexUtils {
 			Log.e(TAG, ex.toString());
 		}
 	}
-
-	private static final int BUFFER_SIZE = 8 * 1024;
 
 	/**
 	 * copy dex from asset files into device's internal storage

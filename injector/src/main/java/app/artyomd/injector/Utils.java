@@ -5,8 +5,8 @@ import org.gradle.api.Project;
 import java.io.*;
 import java.util.Scanner;
 
-public class Utils {
-    public static void execCommand(String command, String... commands) throws IOException {
+class Utils {
+    static void execCommand(String command, String... commands) throws IOException {
         System.out.print("executing command: " + command + " ");
         Runtime rt = Runtime.getRuntime();
         Process proc = rt.exec(command);
@@ -46,12 +46,12 @@ public class Utils {
         }
     }
 
-    public static File getWorkingDir(Project project) {
+    static File getWorkingDir(Project project) {
         return project.file(project.getBuildDir() + "/exploded-aar/");
     }
 
 
-    public static boolean cmp(String v1, String v2) {
+    static boolean cmp(String v1, String v2) {
         String[] numbers1 = v1.split(".");
         String[] numbers2 = v2.split(".");
         int minSize = numbers1.length;
@@ -70,7 +70,7 @@ public class Utils {
         return numbers1.length >= numbers2.length;
     }
 
-    public static boolean contains(File file, String string) {
+    static boolean contains(File file, String string) {
         try (Scanner scanner = new Scanner(file)) {
             while (scanner.hasNextLine()) {
                 if (scanner.nextLine().contains(string)) {

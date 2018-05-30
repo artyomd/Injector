@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 
 public class InjectorPlugin implements Plugin<Project> {
 
-    public static final String EXTRACT_AARS_TASK_NAME = "extractAARs";
+    static final String EXTRACT_AARS_TASK_NAME = "extractAARs";
 
     private Project project;
     private Configuration injectConf;
@@ -46,7 +46,7 @@ public class InjectorPlugin implements Plugin<Project> {
         });
     }
 
-    public void createExtractAARsTask() {
+    private void createExtractAARsTask() {
         Task extractAars = project.getTasks().create(EXTRACT_AARS_TASK_NAME, Task.class);
         extractAars.doFirst(task -> aars.forEach((Consumer<ResolvedArtifact>) resolvedArtifact -> {
             try {
@@ -81,7 +81,7 @@ public class InjectorPlugin implements Plugin<Project> {
 
             @Override
             public void afterResolve(@NotNull ResolvableDependencies dependencies) {
-
+                //Nothing to do
             }
         });
     }

@@ -13,7 +13,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.zip.ZipFile;
 
 import dalvik.system.DexFile;
@@ -25,17 +24,15 @@ public final class DexInjector {
 	private DexInjector() {
 	}
 
-	public static void installSecondaryDexes(ClassLoader loader, File dexDir, List<? extends File> files)
+	static void installSecondaryDexes(ClassLoader loader, File dexDir, List<? extends File> files)
 			throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException,
 			InvocationTargetException, NoSuchMethodException, IOException, SecurityException,
 			ClassNotFoundException, InstantiationException {
 		if (!files.isEmpty()) {
 			if (Build.VERSION.SDK_INT >= 19) {
 				V19.install(loader, files, dexDir);
-			} else if (Build.VERSION.SDK_INT >= 14) {
-				V14.install(loader, files);
 			} else {
-				V4.install(loader, files);
+				V14.install(loader, files);
 			}
 		}
 	}
@@ -113,9 +110,9 @@ public final class DexInjector {
 	 * Installer for platform versions 19.
 	 */
 	private static final class V19 {
-		static void install(ClassLoader loader,
-		                    List<? extends File> additionalClassPathEntries,
-		                    File optimizedDirectory)
+		private static void install(ClassLoader loader,
+		                            List<? extends File> additionalClassPathEntries,
+		                            File optimizedDirectory)
 				throws IllegalArgumentException, IllegalAccessException,
 				NoSuchFieldException, InvocationTargetException, NoSuchMethodException,
 				IOException {
@@ -177,6 +174,9 @@ public final class DexInjector {
 	 * Installer for platform versions 14, 15, 16, 17 and 18.
 	 */
 	private static final class V14 {
+
+		private final ElementConstructor elementConstructor;
+
 		private interface ElementConstructor {
 			Object newInstance(File file, DexFile dex)
 					throws IllegalArgumentException, InstantiationException,
@@ -247,10 +247,8 @@ public final class DexInjector {
 			}
 		}
 
-		private final ElementConstructor elementConstructor;
-
-		static void install(ClassLoader loader,
-		                    List<? extends File> additionalClassPathEntries)
+		private static void install(ClassLoader loader,
+		                            List<? extends File> additionalClassPathEntries)
 				throws IOException, SecurityException, IllegalArgumentException,
 				ClassNotFoundException, NoSuchMethodException, InstantiationException,
 				IllegalAccessException, InvocationTargetException, NoSuchFieldException {
@@ -277,10 +275,10 @@ public final class DexInjector {
 			Class<?> elementClass = Class.forName("dalvik.system.DexPathList$Element");
 			try {
 				constructor = new ICSElementConstructor(elementClass);
-			} catch (NoSuchMethodException e1) {
+			} catch (NoSuchMethodException e) {
 				try {
 					constructor = new JBMR11ElementConstructor(elementClass);
-				} catch (NoSuchMethodException e2) {
+				} catch (NoSuchMethodException exception) {
 					constructor = new JBMR2ElementConstructor(elementClass);
 				}
 			}
@@ -316,45 +314,6 @@ public final class DexInjector {
 			String optimizedFileName = fileName.substring(0, fileName.length() - DEX_SUFFIX.length()) + DEX_SUFFIX;
 			File result = new File(optimizedDirectory, optimizedFileName);
 			return result.getPath();
-		}
-	}
-
-	/**
-	 * Installer for platform versions 4 to 13.
-	 */
-	private static final class V4 {
-		static void install(ClassLoader loader,
-		                    List<? extends File> additionalClassPathEntries)
-				throws IllegalArgumentException, IllegalAccessException,
-				NoSuchFieldException, IOException {
-			/* The patched class loader is expected to be a descendant of
-			 * dalvik.system.DexClassLoader. We modify its
-			 * fields mPaths, mFiles, mZips and mDexs to append additional DEX
-			 * file entries.
-			 */
-			int extraSize = additionalClassPathEntries.size();
-			Field pathField = findField(loader, "path");
-			StringBuilder path = new StringBuilder((String) pathField.get(loader));
-			String[] extraPaths = new String[extraSize];
-			File[] extraFiles = new File[extraSize];
-			ZipFile[] extraZips = new ZipFile[extraSize];
-			DexFile[] extraDexs = new DexFile[extraSize];
-			for (ListIterator<? extends File> iterator = additionalClassPathEntries.listIterator();
-			     iterator.hasNext(); ) {
-				File additionalEntry = iterator.next();
-				String entryPath = additionalEntry.getAbsolutePath();
-				path.append(':').append(entryPath);
-				int index = iterator.previousIndex();
-				extraPaths[index] = entryPath;
-				extraFiles[index] = additionalEntry;
-				extraZips[index] = new ZipFile(additionalEntry);
-				extraDexs[index] = DexFile.loadDex(entryPath, entryPath + ".dex", 0);
-			}
-			pathField.set(loader, path.toString());
-			expandFieldArray(loader, "mPaths", extraPaths);
-			expandFieldArray(loader, "mFiles", extraFiles);
-			expandFieldArray(loader, "mZips", extraZips);
-			expandFieldArray(loader, "mDexs", extraDexs);
 		}
 	}
 }

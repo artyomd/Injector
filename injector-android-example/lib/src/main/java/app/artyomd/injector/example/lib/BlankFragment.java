@@ -12,8 +12,6 @@ import com.airbnb.lottie.LottieComposition;
 import com.airbnb.lottie.OnCompositionLoadedListener;
 
 public class BlankFragment extends Fragment {
-	public BlankFragment() {
-	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
