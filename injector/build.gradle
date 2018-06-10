@@ -16,11 +16,11 @@ repositories {
 
 dependencies {
     compile gradleApi()
-    compile 'com.squareup:javapoet:1.10.0'
+    compile 'com.squareup:javapoet:1.11.1'
     compile 'com.google.guava:guava:25.1-jre'
     compile 'commons-io:commons-io:2.6'
     compile 'net.lingala.zip4j:zip4j:1.3.2'
-    compile 'com.android.tools.build:gradle:3.1.2'
+    compile 'com.android.tools.build:gradle:3.1.3'
 }
 
 def isReleaseBuild() {
@@ -36,11 +36,11 @@ def getSnapshotRepositoryUrl() {
 }
 
 def getRepositoryUsername() {
-    return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : ""
+    return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : System.getenv("NEXUS_USERNAME")
 }
 
 def getRepositoryPassword() {
-    return hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : ""
+    return hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : System.getenv("NEXUS_PASSWORD")
 }
 
 
