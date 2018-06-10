@@ -46,13 +46,12 @@ def getSnapshotRepositoryUrl() {
 }
 
 def getRepositoryUsername() {
-    return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : ""
+    return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : System.getenv("NEXUS_USERNAME")
 }
 
 def getRepositoryPassword() {
-    return hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : ""
+    return hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : System.getenv("NEXUS_PASSWORD")
 }
-
 
 signing {
     required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
