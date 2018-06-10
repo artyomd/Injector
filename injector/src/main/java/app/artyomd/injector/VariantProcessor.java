@@ -14,6 +14,7 @@ import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.google.common.collect.Iterables;
 import groovy.util.XmlSlurper;
+import org.gradle.api.Action;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -27,12 +28,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 class VariantProcessor {
 
@@ -241,14 +240,16 @@ class VariantProcessor {
             throw new RuntimeException("Can not find task " + taskPath);
         }
         mergeFileTask.doFirst(task -> {
-            androidArchiveLibraries.forEach(resolvedArtifact -> {
-                File thirdProguard = resolvedArtifact.getProguardRules();
+            Set<File> inputFiles = new HashSet<>(mergeFileTask.getInputFiles());
+            androidArchiveLibraries.forEach(androidArchiveLibrary -> {
+                File thirdProguard = androidArchiveLibrary.getProguardRules();
                 if (!thirdProguard.exists()) {
                     return;
                 }
-                mergeFileTask.getInputFiles().add(thirdProguard);
+                inputFiles.add(thirdProguard);
             });
-            mergeFileTask.getInputFiles().add(getExternalLibsProguard());
+            inputFiles.add(getExternalLibsProguard());
+            mergeFileTask.setInputFiles(inputFiles);
         });
     }
 

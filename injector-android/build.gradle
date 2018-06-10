@@ -37,6 +37,16 @@ def isReleaseBuild() {
     return !VERSION_NAME.contains("SNAPSHOT")
 }
 
+def checkSigning() {
+    ext."signing.secretKeyRingFile" = System.properties['user.home'] + '/.gnupg/secring.gpg'
+    if (!hasProperty("signing.keyId")) {
+        ext."signing.keyId" = System.getenv("signingKeyId")
+    }
+    if (!hasProperty("signing.password")) {
+        ext."signing.password" = System.getenv("signingPassword")
+    }
+}
+
 def getReleaseRepositoryUrl() {
     return hasProperty('NEXUS_RELEASE_REPOSITORY_URL') ? NEXUS_RELEASE_REPOSITORY_URL : "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
 }
@@ -55,6 +65,7 @@ def getRepositoryPassword() {
 
 signing {
     required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
+    checkSigning()
     sign configurations.archives
 }
 

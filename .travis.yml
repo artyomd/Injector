@@ -5,9 +5,11 @@ android:
                 - build-tools-27.0.3
                 - android-27
 script:
+        - cd cd/
+        - ./before-deploy.sh
+        - cd ../
         - cd injector && ./gradlew build install
         - cd ../injector-android-example && ./gradlew build
-        - cd ../
 after_success:
-        - ./cd/before-deploy.sh
-        - ./cd/deploy.sh
+        - cd ../cd/
+        - ./deploy.sh
