@@ -3,8 +3,7 @@ package app.artyomd.injector;
 import com.android.build.gradle.AppExtension;
 import com.android.build.gradle.LibraryExtension;
 import com.android.build.gradle.api.BaseVariant;
-import net.lingala.zip4j.core.ZipFile;
-import net.lingala.zip4j.exception.ZipException;
+
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -12,6 +11,7 @@ import org.gradle.api.artifacts.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -49,15 +49,14 @@ public class InjectorPlugin implements Plugin<Project> {
     private void createExtractAARsTask() {
         Task extractAars = project.getTasks().create(EXTRACT_AARS_TASK_NAME, Task.class);
         extractAars.doFirst(task -> aars.forEach((Consumer<ResolvedArtifact>) resolvedArtifact -> {
-            try {
-                String extractedAarPath = ((AndroidArchiveLibrary) resolvedArtifact).getRootFolder().getAbsolutePath();
-                File extractedAar = new File(extractedAarPath);
-                if (!extractedAar.exists()) {
-                    ZipFile zipFile = new ZipFile(resolvedArtifact.getFile());
-                    zipFile.extractAll(extractedAarPath);
+            String extractedAarPath = ((AndroidArchiveLibrary) resolvedArtifact).getRootFolder().getAbsolutePath();
+            File extractedAar = new File(extractedAarPath);
+            if (!extractedAar.exists()) {
+                try {
+                    Utils.unzip(resolvedArtifact.getFile(), extractedAarPath);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            } catch (ZipException e) {
-                e.printStackTrace();
             }
         }));
     }
