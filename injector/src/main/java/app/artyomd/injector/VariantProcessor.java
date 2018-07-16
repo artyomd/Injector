@@ -14,7 +14,6 @@ import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.google.common.collect.Iterables;
 import groovy.util.XmlSlurper;
-import org.gradle.api.Action;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -31,7 +30,6 @@ import java.io.PrintWriter;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 class VariantProcessor {
 

@@ -4,19 +4,21 @@ import org.gradle.api.Project;
 
 import java.io.*;
 import java.util.Scanner;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 class Utils {
     static void execCommand(String command, String... commands) throws IOException {
         System.out.print("executing command: " + command + " ");
         Runtime rt = Runtime.getRuntime();
-        Process proc = rt.exec(command);
+        Process process = rt.exec(command);
 
-        BufferedReader stdInput = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+        BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-        BufferedReader stdError = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+        BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
         if (commands != null) {
-            DataOutputStream outputStream = new DataOutputStream(proc.getOutputStream());
+            DataOutputStream outputStream = new DataOutputStream(process.getOutputStream());
             for (String subCommand : commands) {
                 System.out.print(subCommand + " ");
                 outputStream.writeBytes(subCommand + "\n");
@@ -40,7 +42,7 @@ class Utils {
         }
 
         try {
-            proc.waitFor();
+            process.waitFor();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -81,5 +83,34 @@ class Utils {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public static void unzip(File zipFile, String destDirectory) throws IOException {
+        File destDir = new File(destDirectory);
+        if (!destDir.exists()) {
+            destDir.mkdirs();
+        }
+        ZipInputStream zipIn = new ZipInputStream(new FileInputStream(zipFile));
+        ZipEntry entry = zipIn.getNextEntry();
+        while (entry != null) {
+            String filePath = destDirectory + File.separator + entry.getName();
+            if (!entry.isDirectory()) {
+                File destinationFile = new File(filePath);
+                destinationFile.createNewFile();
+                BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(destinationFile));
+                byte[] bytesIn = new byte[4096];
+                int read;
+                while ((read = zipIn.read(bytesIn)) != -1) {
+                    bos.write(bytesIn, 0, read);
+                }
+                bos.close();
+            } else {
+                File dir = new File(filePath);
+                dir.mkdir();
+            }
+            zipIn.closeEntry();
+            entry = zipIn.getNextEntry();
+        }
+        zipIn.close();
     }
 }
