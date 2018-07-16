@@ -1,3 +1,7 @@
+<p align="center">
+<img src="https://raw.githubusercontent.com/jbeguna04/Injector/master/LogoDesigns/logotype1blue.png" width=610.082 align="center">
+</p>
+
 # Injector
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/app.artyomd.injector/injector/badge.svg)](https://maven-badges.herokuapp.com/maven-central/app.artyomd.injector/injector)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/f9c01ceb05ef4949a9c9869f22a5524d)](https://app.codacy.com/app/artyomd/Injector?utm_source=github.com&utm_medium=referral&utm_content=artyomd/Injector&utm_campaign=badger)
