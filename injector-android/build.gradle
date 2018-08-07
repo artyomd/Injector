@@ -26,6 +26,7 @@ repositories {
 
 android {
     compileSdkVersion 28
+    buildToolsVersion "28.0.2"
     defaultConfig {
         minSdkVersion 15
         targetSdkVersion 28
