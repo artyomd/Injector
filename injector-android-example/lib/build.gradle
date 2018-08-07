@@ -2,10 +2,10 @@ apply plugin: 'com.android.library'
 apply plugin: 'app.artyomd.injector'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 27
+        targetSdkVersion 28
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
