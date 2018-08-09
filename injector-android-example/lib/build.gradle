@@ -8,6 +8,9 @@ android {
         minSdkVersion 16
         targetSdkVersion 28
     }
+    lintOptions {
+        abortOnError false
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
