@@ -1,14 +1,12 @@
 apply plugin: 'com.android.application'
 
-apply from: '../../versions.gradle'
-
 android {
-    compileSdkVersion 27
-
+    compileSdkVersion 28
+    buildToolsVersion "28.0.2"
     defaultConfig {
         applicationId "app.artyomd.inject.example"
         minSdkVersion 16
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
     }
