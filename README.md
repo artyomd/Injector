@@ -5,7 +5,7 @@
 # Injector
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/app.artyomd.injector/injector/badge.svg)](https://maven-badges.herokuapp.com/maven-central/app.artyomd.injector/injector)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/f9c01ceb05ef4949a9c9869f22a5524d)](https://app.codacy.com/app/artyomd/Injector?utm_source=github.com&utm_medium=referral&utm_content=artyomd/Injector&utm_campaign=badger)
-<a href='https://travis-ci.org/artyomd/Injector/builds'><img src='https://travis-ci.org/artyomd/Injector.svg?branch=master'></a>
+<a href='https://travis-ci.com/artyomd/Injector/builds'><img src='https://travis-ci.com/artyomd/Injector.svg?branch=master'></a>
 [![Known Vulnerabilities](https://snyk.io/test/github/artyomd/Injector/badge.svg?targetFile=injector%2Fbuild.gradle)](https://snyk.io/test/github/artyomd/Injector?targetFile=injector%2Fbuild.gradle)
 
 Injector is a gradle plugin for android projects which helps to make third-party android libraries downloadable. Injector supports android gradle plugin **3.1.0+**.
@@ -19,7 +19,7 @@ Add maven central repository to your project's build script and add injector lib
 buildscript {
     repositories {
         google()
-	    mavenCentral()
+	mavenCentral()
         jcenter()
     }
     dependencies {
@@ -36,7 +36,7 @@ injectConfig{
 	groups = [
             "X": ["foo.bar.*"]
     ]
-	dexLocation = "/outputs/inject/inject.dex"
+    dexLocation = "/outputs/inject/inject.dex"
 }
 ```
 By default, we are excluding android libs such as com.android.*, android.arch.*, etc.
@@ -48,11 +48,11 @@ Injector also provides android helper library to inject dex files. Add maven  ce
 ```
 repositories {
         google()
-	    mavenCentral()
+	mavenCentral()
         jcenter()
     }
 dependencies {
-    mplementation "app.artyomd.injector:injector-android:{latest-version}"
+    implementation "app.artyomd.injector:injector-android:{latest-version}"
 }
 ```
 You can upload dex file to somewhere and then at runtime download and load it or copy dex file to assets folder then at runtime copy the file into internal storage and then load dex file. If your dex files are in the assets dir just use **DexUtils.prepareDex** to copy dex files into internal storage. Using **DexUtils.loadDex** you can load a list of dex files into your application at runtime.
