@@ -5,11 +5,12 @@ android:
                 - build-tools-28.0.2
                 - android-28
 script:
-        - cd cd/
-        - ./before-deploy.sh
-        - cd ../
         - cd injector && ./gradlew build install
         - cd ../injector-android-example && ./gradlew build
 after_success:
-        - cd ../cd/
+        - cd ../.buildscript/
         - ./deploy.sh
+
+cache:
+	directories:
+		- $HOME/.gradle

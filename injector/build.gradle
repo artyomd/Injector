@@ -22,10 +22,6 @@ dependencies {
     compile 'com.android.tools.build:gradle:3.1.4'
 }
 
-def isReleaseBuild() {
-    return !VERSION_NAME.contains("SNAPSHOT")
-}
-
 def checkSigning() {
     ext."signing.secretKeyRingFile" = System.properties['user.home'] + '/.gnupg/secring.gpg'
     if (!hasProperty("signing.keyId")) {
@@ -52,11 +48,13 @@ def getRepositoryPassword() {
     return hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : System.getenv("NEXUS_PASSWORD")
 }
 
-
 signing {
-    required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
     checkSigning()
     sign configurations.archives
+}
+
+tasks.withType(Sign) {
+    onlyIf {gradle.taskGraph.hasTask("uploadArchives") }
 }
 
 task packageJavadoc(type: Jar, dependsOn: 'javadoc') {

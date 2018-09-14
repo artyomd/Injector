@@ -33,11 +33,6 @@ android {
     }
 }
 
-
-def isReleaseBuild() {
-    return !VERSION_NAME.contains("SNAPSHOT")
-}
-
 def checkSigning() {
     ext."signing.secretKeyRingFile" = System.properties['user.home'] + '/.gnupg/secring.gpg'
     if (!hasProperty("signing.keyId")) {
@@ -65,9 +60,12 @@ def getRepositoryPassword() {
 }
 
 signing {
-    required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
     checkSigning()
     sign configurations.archives
+}
+
+tasks.withType(Sign) {
+    onlyIf {gradle.taskGraph.hasTask("uploadArchives") }
 }
 
 task javadoc(type: Javadoc) {
