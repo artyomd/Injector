@@ -48,12 +48,13 @@ def getRepositoryPassword() {
 }
 
 signing {
+    required { gradle.taskGraph.hasTask(":uploadArchives") }
     checkSigning()
     sign configurations.archives
 }
 
 tasks.withType(Sign) {
-    onlyIf {gradle.taskGraph.hasTask("uploadArchives") }
+    onlyIf { gradle.taskGraph.hasTask(":uploadArchives") }
 }
 
 task packageJavadoc(type: Jar, dependsOn: 'javadoc') {
