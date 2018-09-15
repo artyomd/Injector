@@ -6,7 +6,7 @@ android:
                 - android-28
 script:
         - cd .buildscript/
-        - cd ./before.sh
+        - ./before.sh
         - cd ../injector && ./gradlew build install
         - cd ../injector-android-example && ./gradlew build
 after_success:
