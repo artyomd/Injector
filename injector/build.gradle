@@ -31,10 +31,6 @@ def checkSigning() {
     }
 }
 
-afterEvaluate {
-    checkSigning()
-}
-
 def getReleaseRepositoryUrl() {
     return hasProperty('NEXUS_RELEASE_REPOSITORY_URL') ? NEXUS_RELEASE_REPOSITORY_URL : ""
 }
@@ -53,6 +49,7 @@ def getRepositoryPassword() {
 
 signing {
     required { gradle.taskGraph.hasTask(":uploadArchives") }
+    checkSigning()
     sign configurations.archives
 }
 
