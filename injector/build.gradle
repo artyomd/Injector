@@ -18,7 +18,7 @@ dependencies {
     compile gradleApi()
     compile 'com.squareup:javapoet:1.11.1'
     compile 'commons-io:commons-io:2.6'
-    compile 'com.android.tools.build:gradle:3.1.4'
+    compile 'com.android.tools.build:gradle:3.2.1'
 }
 
 def checkSigning() {
