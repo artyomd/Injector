@@ -279,10 +279,10 @@ public final class DexInjector {
 			Class<?> elementClass = Class.forName("dalvik.system.DexPathList$Element");
 			try {
 				constructor = new ICSElementConstructor(elementClass);
-			} catch (NoSuchMethodException e1) {
+			} catch (NoSuchMethodException e) {
 				try {
 					constructor = new JBMR11ElementConstructor(elementClass);
-				} catch (NoSuchMethodException e2) {
+				} catch (NoSuchMethodException exception) {
 					constructor = new JBMR2ElementConstructor(elementClass);
 				}
 			}
