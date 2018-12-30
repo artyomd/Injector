@@ -18,6 +18,7 @@ import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.internal.file.collections.ImmutableFileCollection;
 import org.xml.sax.SAXException;
 
 import javax.annotation.Nonnull;
@@ -35,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings("WeakerAccess")
 class VariantProcessor {
 
 	private final Project project;
@@ -242,7 +244,7 @@ class VariantProcessor {
 			throw new RuntimeException("Can not find task " + taskPath);
 		}
 		mergeFileTask.doFirst(task -> {
-			Set<File> inputFiles = new HashSet<>(mergeFileTask.getInputFiles());
+			Set<File> inputFiles = new HashSet<>(mergeFileTask.getInputFiles().getFiles());
 			androidArchiveLibraries.forEach(androidArchiveLibrary -> {
 				File thirdProguard = androidArchiveLibrary.getProguardRules();
 				if (!thirdProguard.exists()) {
@@ -251,7 +253,7 @@ class VariantProcessor {
 				inputFiles.add(thirdProguard);
 			});
 			inputFiles.add(getExternalLibsProguard());
-			mergeFileTask.setInputFiles(inputFiles);
+			mergeFileTask.setInputFiles(ImmutableFileCollection.of(inputFiles));
 		});
 	}
 

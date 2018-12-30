@@ -1,6 +1,5 @@
 package app.artyomd.injector;
 
-
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -10,7 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "WeakerAccess"})
 public class InjectorExtension {
 	private boolean enabled = true;
 	private List<String> defaultExcludeGroups = new ArrayList<>();
@@ -24,6 +23,7 @@ public class InjectorExtension {
 
 	public InjectorExtension() {
 		defaultExcludeGroups.add("com.android.*");
+		defaultExcludeGroups.add("androidx.*");
 		defaultExcludeGroups.add("android.arch.*");
 	}
 
@@ -77,19 +77,10 @@ public class InjectorExtension {
 	}
 
 	public boolean checkForceExcluded(ResolvedArtifact artifact) {
-		String name = artifact.getModuleVersion().getId().getName();
-		for (String excludeName : forceExcludeNames) {
-			if (name.matches(excludeName)) {
-				return true;
-			}
-		}
-		String group = artifact.getModuleVersion().getId().getGroup();
-		for (String excludeName : forceExcludeGroups) {
-			if (group.matches(excludeName)) {
-				return true;
-			}
-		}
-		return false;
+		ModuleVersionIdentifier id = artifact.getModuleVersion().getId();
+		String name = id.getName();
+		String group = id.getGroup();
+		return Utils.listContainsMatcher(name, forceExcludeNames) || Utils.listContainsMatcher(group, forceExcludeGroups);
 	}
 
 	public boolean checkForceExcluded(Dependency dependency) {
@@ -111,27 +102,12 @@ public class InjectorExtension {
 	}
 
 	public boolean checkName(String name) {
-		for (String excludeName : excludeNames) {
-			if (name.matches(excludeName)) {
-				return false;
-			}
-		}
-		return true;
+		return !Utils.listContainsMatcher(name, excludeNames);
 	}
 
 	public boolean checkGroup(String group) {
-		for (String excludeGroup : defaultExcludeGroups) {
-			if (group.matches(excludeGroup)) {
-				return false;
-			}
-		}
-
-		for (String excludeGroup : excludeGroups) {
-			if (group.matches(excludeGroup)) {
-				return false;
-			}
-		}
-		return true;
+		return !Utils.listContainsMatcher(group, defaultExcludeGroups)
+				&& !Utils.listContainsMatcher(group, excludeGroups);
 	}
 
 	public Map<String, List<ResolvedArtifact>> getDexes(List<ResolvedArtifact> artifacts) {

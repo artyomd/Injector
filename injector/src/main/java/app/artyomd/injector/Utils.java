@@ -11,10 +11,12 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.Scanner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+@SuppressWarnings("WeakerAccess")
 class Utils {
 	static void execCommand(String command, String... commands) throws IOException {
 		System.out.print("executing command: " + command + " ");
@@ -93,6 +95,20 @@ class Utils {
 		return false;
 	}
 
+	static String getFilePackageName(File file) {
+		try (Scanner scanner = new Scanner(file)) {
+			while (scanner.hasNextLine()) {
+				String line = scanner.nextLine();
+				if (line.matches("package\\s.*;")) {
+					return line.split("package")[1].split(";")[0].replaceAll("\\s", "");
+				}
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		return "";
+	}
+
 	public static void unzip(File zipFile, String destDirectory) throws IOException {
 		File destDir = new File(destDirectory);
 		if (!destDir.exists()) {
@@ -120,5 +136,14 @@ class Utils {
 			entry = zipIn.getNextEntry();
 		}
 		zipIn.close();
+	}
+
+	public static boolean listContainsMatcher(String str, List<String> matchers) {
+		for (String matcher : matchers) {
+			if (str.matches(matcher)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

@@ -17,6 +17,7 @@ repositories {
 dependencies {
     compile gradleApi()
     compile 'com.squareup:javapoet:1.11.1'
+    compile 'com.github.javaparser:javaparser-core:3.9.0'
     compile 'commons-io:commons-io:2.6'
     compile 'com.android.tools.build:gradle:3.2.1'
 }

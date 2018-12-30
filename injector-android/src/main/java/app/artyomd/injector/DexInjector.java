@@ -3,6 +3,8 @@ package app.artyomd.injector;
 import android.os.Build;
 import android.util.Log;
 
+import dalvik.system.DexFile;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -15,8 +17,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.zip.ZipFile;
 
-import dalvik.system.DexFile;
-
 public final class DexInjector {
 	private static final String TAG = DexInjector.class.getSimpleName();
 	private static final String DEX_SUFFIX = "dex";
@@ -24,7 +24,8 @@ public final class DexInjector {
 	private DexInjector() {
 	}
 
-	static void installSecondaryDexes(ClassLoader loader, File dexDir, List<? extends File> files)
+	public static void installSecondaryDexes(ClassLoader loader, File dexDir,
+	                                         List<? extends File> files)
 			throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException,
 			InvocationTargetException, NoSuchMethodException, IOException, SecurityException,
 			ClassNotFoundException, InstantiationException {
@@ -110,9 +111,9 @@ public final class DexInjector {
 	 * Installer for platform versions 19.
 	 */
 	private static final class V19 {
-		private static void install(ClassLoader loader,
-		                            List<? extends File> additionalClassPathEntries,
-		                            File optimizedDirectory)
+		static void install(ClassLoader loader,
+		                    List<? extends File> additionalClassPathEntries,
+		                    File optimizedDirectory)
 				throws IllegalArgumentException, IllegalAccessException,
 				NoSuchFieldException, InvocationTargetException, NoSuchMethodException,
 				IOException {
@@ -191,7 +192,8 @@ public final class DexInjector {
 
 			ICSElementConstructor(Class<?> elementClass)
 					throws SecurityException, NoSuchMethodException {
-				elementConstructor = elementClass.getConstructor(File.class, ZipFile.class, DexFile.class);
+				elementConstructor =
+						elementClass.getConstructor(File.class, ZipFile.class, DexFile.class);
 				elementConstructor.setAccessible(true);
 			}
 
@@ -213,7 +215,8 @@ public final class DexInjector {
 
 			JBMR11ElementConstructor(Class<?> elementClass)
 					throws SecurityException, NoSuchMethodException {
-				elementConstructor = elementClass.getConstructor(File.class, File.class, DexFile.class);
+				elementConstructor = elementClass
+						.getConstructor(File.class, File.class, DexFile.class);
 				elementConstructor.setAccessible(true);
 			}
 
@@ -235,7 +238,8 @@ public final class DexInjector {
 
 			JBMR2ElementConstructor(Class<?> elementClass)
 					throws SecurityException, NoSuchMethodException {
-				elementConstructor = elementClass.getConstructor(File.class, Boolean.TYPE, File.class, DexFile.class);
+				elementConstructor = elementClass
+						.getConstructor(File.class, Boolean.TYPE, File.class, DexFile.class);
 				elementConstructor.setAccessible(true);
 			}
 
@@ -247,8 +251,8 @@ public final class DexInjector {
 			}
 		}
 
-		private static void install(ClassLoader loader,
-		                            List<? extends File> additionalClassPathEntries)
+		static void install(ClassLoader loader,
+		                    List<? extends File> additionalClassPathEntries)
 				throws IOException, SecurityException, IllegalArgumentException,
 				ClassNotFoundException, NoSuchMethodException, InstantiationException,
 				IllegalAccessException, InvocationTargetException, NoSuchFieldException {
@@ -297,7 +301,9 @@ public final class DexInjector {
 			Object[] elements = new Object[files.size()];
 			for (int i = 0; i < elements.length; i++) {
 				File file = files.get(i);
-				elements[i] = elementConstructor.newInstance(file, DexFile.loadDex(file.getPath(), optimizedPathFor(file), 0));
+				elements[i] = elementConstructor.newInstance(
+						file,
+						DexFile.loadDex(file.getPath(), optimizedPathFor(file), 0));
 			}
 			return elements;
 		}
@@ -311,7 +317,9 @@ public final class DexInjector {
 			// as DexPathList.optimizedPathFor
 			File optimizedDirectory = path.getParentFile();
 			String fileName = path.getName();
-			String optimizedFileName = fileName.substring(0, fileName.length() - DEX_SUFFIX.length()) + DEX_SUFFIX;
+			String optimizedFileName =
+					fileName.substring(0, fileName.length() - DEX_SUFFIX.length())
+							+ DEX_SUFFIX;
 			File result = new File(optimizedDirectory, optimizedFileName);
 			return result.getPath();
 		}
