@@ -7,9 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.airbnb.lottie.LottieAnimationView;
-import com.airbnb.lottie.LottieComposition;
 import com.airbnb.lottie.LottieCompositionFactory;
-import com.airbnb.lottie.LottieListener;
 
 public class BlankFragment extends Fragment {
 
@@ -27,12 +25,9 @@ public class BlankFragment extends Fragment {
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 		final LottieAnimationView lottieAnimationView = view.findViewById(R.id.lottie_view);
-		LottieCompositionFactory.fromAsset(getActivity(), "tick.json").addListener(new LottieListener<LottieComposition>() {
-			@Override
-			public void onResult(LottieComposition result) {
-				lottieAnimationView.setComposition(result);
-				lottieAnimationView.playAnimation();
-			}
+		LottieCompositionFactory.fromAsset(getActivity(), "tick.json").addListener(result -> {
+			lottieAnimationView.setComposition(result);
+			lottieAnimationView.playAnimation();
 		});
 	}
 }
