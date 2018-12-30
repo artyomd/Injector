@@ -2,14 +2,14 @@ package app.artyomd.injector.example.lib;
 
 import android.app.Fragment;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieComposition;
-import com.airbnb.lottie.OnCompositionLoadedListener;
+import com.airbnb.lottie.LottieCompositionFactory;
+import com.airbnb.lottie.LottieListener;
 
 public class BlankFragment extends Fragment {
 
@@ -27,12 +27,10 @@ public class BlankFragment extends Fragment {
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 		final LottieAnimationView lottieAnimationView = view.findViewById(R.id.lottie_view);
-		LottieComposition.Factory.fromAssetFileName(getActivity(), "tick.json", new OnCompositionLoadedListener() {
+		LottieCompositionFactory.fromAsset(getActivity(), "tick.json").addListener(new LottieListener<LottieComposition>() {
 			@Override
-			public void onCompositionLoaded(@Nullable LottieComposition composition) {
-				if (composition != null) {
-					lottieAnimationView.setComposition(composition);
-				}
+			public void onResult(LottieComposition result) {
+				lottieAnimationView.setComposition(result);
 				lottieAnimationView.playAnimation();
 			}
 		});
