@@ -106,14 +106,14 @@ class VariantProcessor {
 		if (invokeManifestTaskClazz == null) {
 			throw new RuntimeException("Can not find class " + className);
 		}
-		ManifestProcessorTask processManifestTask = Iterables.get(variant.getOutputs(), 0).getProcessManifest();
+		ManifestProcessorTask processManifestTask = Iterables.get(variant.getOutputs(), 0).getProcessManifestProvider().get();
 		InvokeManifestMerger manifestsMergeTask = project.getTasks().create("merge" + variantName + "Manifest", invokeManifestTaskClazz);
 		manifestsMergeTask.setVariantName(variant.getName());
 		manifestsMergeTask.setMainManifestFile(processManifestTask.getAaptFriendlyManifestOutputFile());
 		List<File> list = new ArrayList<>();
 		androidArchiveLibraries.forEach(resolvedArtifact -> list.add((resolvedArtifact).getManifest()));
 		manifestsMergeTask.setSecondaryManifestFiles(list);
-		manifestsMergeTask.setOutputFile(new File(processManifestTask.getManifestOutputDirectory(), "AndroidManifest.xml"));
+		manifestsMergeTask.setOutputFile(new File(processManifestTask.getManifestOutputDirectory().get().getAsFile(), "AndroidManifest.xml"));
 		manifestsMergeTask.dependsOn(processManifestTask);
 		processManifestTask.finalizedBy(manifestsMergeTask);
 	}
@@ -156,7 +156,7 @@ class VariantProcessor {
 	private void processRSources() {
 		androidArchiveLibraries.forEach(resolvedArtifact -> {
 			try {
-				RSourceGenerator.generate((resolvedArtifact), projectPackageName, project.getBuildDir().getAbsolutePath(), variantName, sourceCompatibilityVersion, targetCompatibilityVersion);
+				RSourceGenerator.generate(resolvedArtifact, projectPackageName, project.getBuildDir().getAbsolutePath(), variantName, sourceCompatibilityVersion, targetCompatibilityVersion);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -167,10 +167,7 @@ class VariantProcessor {
 	 * merge assets
 	 */
 	private void processAssets() {
-		MergeSourceSetFolders assetsTask = variant.getMergeAssets();
-		if (assetsTask == null) {
-			throw new RuntimeException("Can not find task in variant.getMergeAssets()!");
-		}
+		MergeSourceSetFolders assetsTask = variant.getMergeAssetsProvider().get();
 		androidArchiveLibraries.forEach(resolvedArtifact -> {
 			File assetsFolder = resolvedArtifact.getAssetsFolder();
 			if ((assetsFolder.exists())) {
@@ -318,7 +315,9 @@ class VariantProcessor {
 
 		Task extractAARsTask = project.getTasks().findByPath(InjectorPlugin.EXTRACT_AARS_TASK_NAME);
 		Task assembleTask = project.getTasks().findByPath("assemble" + variantName);
+		Task rGenerationTask = project.getTasks().findByPath("generate" + variantName+"RFile");
 		createDexesTask.dependsOn(extractAARsTask);
+		createDexesTask.dependsOn(rGenerationTask);
 		createDexesTask.dependsOn(assembleTask);
 	}
 }
