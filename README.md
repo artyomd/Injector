@@ -8,7 +8,8 @@
 <a href='https://travis-ci.com/artyomd/Injector/builds'><img src='https://travis-ci.com/artyomd/Injector.svg?branch=master'></a>
 [![Known Vulnerabilities](https://snyk.io/test/github/artyomd/Injector/badge.svg?targetFile=injector%2Fbuild.gradle)](https://snyk.io/test/github/artyomd/Injector?targetFile=injector%2Fbuild.gradle)
 
-Injector is a gradle plugin for android projects which helps to make third-party android libraries downloadable. Injector supports android gradle plugin **3.1.0+**.
+Injector is a gradle plugin for android projects which helps to make third-party android libraries downloadable. Injector supports android gradle plugin **3.1.0+**. For more information and background of Injector you can read this 
+[article](https://medium.com/@artyomdangizyan/aar-to-dex-loading-and-running-code-at-runtime-in-android-application-69089a30c715).
 # How it works
 Injector plugin extracts all aar files into build/exploded-aar directory then, merges all manifests to your project's manifest, copies all resources into your project's resource directory, generates R.java for aar libraries, compiles them and injects classes into library's class.jar and then creates dex files from jar files.
 # How to use
