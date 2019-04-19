@@ -1,5 +1,5 @@
 project.ext {
-    VERSION_NAME = "0.3.5"
+    VERSION_NAME = "0.3.6"
     GROUP = "app.artyomd.injector"
 
     POM_INJECTOR_NAME = "injector"
