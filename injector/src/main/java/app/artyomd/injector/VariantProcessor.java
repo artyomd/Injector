@@ -13,7 +13,7 @@ import com.android.tools.r8.D8Command;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.google.common.collect.Iterables;
-import groovy.util.XmlSlurper;
+
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -21,8 +21,6 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.internal.file.collections.ImmutableFileCollection;
 import org.xml.sax.SAXException;
 
-import javax.annotation.Nonnull;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -35,6 +33,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nonnull;
+import javax.xml.parsers.ParserConfigurationException;
+
+import groovy.util.XmlSlurper;
 
 @SuppressWarnings("WeakerAccess")
 class VariantProcessor {
@@ -54,6 +57,8 @@ class VariantProcessor {
 	private String variantName;
 	private String projectPackageName;
 
+	private int minApiLevel;
+
 	VariantProcessor(Project project, BaseVariant variant) {
 		this.project = project;
 		this.variant = variant;
@@ -65,6 +70,7 @@ class VariantProcessor {
 		} catch (IOException | SAXException | ParserConfigurationException e) {
 			e.printStackTrace();
 		}
+		this.minApiLevel = variant.getMergedFlavor().getMinSdkVersion().getApiLevel();
 	}
 
 	public void setAndroidArchiveLibraries(Set<AndroidArchiveLibrary> androidArchiveLibraries) {
@@ -274,7 +280,7 @@ class VariantProcessor {
 					dexOption.add("--output");
 					dexOption.add(outPutDex);
 					dexOption.add("--min-api");
-					dexOption.add(extension.getMinApiLevel());
+					dexOption.add(Integer.toString(minApiLevel));
 					value.forEach(resolvedArtifact -> {
 						if (resolvedArtifact instanceof AndroidArchiveLibrary) {
 							File classesJar = ((AndroidArchiveLibrary) resolvedArtifact).getClassesJarFile();

@@ -20,15 +20,6 @@ public class InjectorExtension {
 	private String dexLocation = "/outputs/inject/";
 	private String defaultDexName = "inject.dex";
 	private Map<String, List<String>> groups = new HashMap<>();
-	private String minApiLevel = "1";
-
-	public String getMinApiLevel() {
-		return minApiLevel;
-	}
-
-	public void setMinApiLevel(String minApiLevel) {
-		this.minApiLevel = minApiLevel;
-	}
 
 	public InjectorExtension() {
 		defaultExcludeGroups.add("com.android.*");
