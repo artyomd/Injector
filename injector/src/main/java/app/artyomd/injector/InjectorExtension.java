@@ -59,7 +59,7 @@ public class InjectorExtension {
 		this.forceExcludeGroups = forceExcludeGroups;
 	}
 
-	public void setDexLoaction(String dexLocation) {
+	public void setDexLocation(String dexLocation) {
 		this.dexLocation = dexLocation;
 	}
 
