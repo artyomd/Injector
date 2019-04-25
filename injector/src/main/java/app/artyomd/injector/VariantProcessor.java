@@ -29,6 +29,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -273,6 +274,8 @@ class VariantProcessor {
 					dexOption.add("--release");
 					dexOption.add("--output");
 					dexOption.add(outPutDex);
+					dexOption.add("--min-api");
+					dexOption.add(extension.getMinApiLevel());
 					value.forEach(resolvedArtifact -> {
 						if (resolvedArtifact instanceof AndroidArchiveLibrary) {
 							File classesJar = ((AndroidArchiveLibrary) resolvedArtifact).getClassesJarFile();
