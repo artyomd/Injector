@@ -1,5 +1,8 @@
-package app.artyomd.injector;
+package app.artyomd.injector.task;
 
+import app.artyomd.injector.model.AndroidArchiveLibrary;
+import app.artyomd.injector.model.TextSymbolItem;
+import app.artyomd.injector.util.Utils;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;

@@ -7,6 +7,7 @@ plugins {
 apply from: '../versions.gradle'
 
 sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     google()
@@ -19,7 +20,7 @@ dependencies {
     compile 'com.squareup:javapoet:1.11.1'
     //compile 'com.github.javaparser:javaparser-core:3.13.6'
     compile 'commons-io:commons-io:2.6'
-    compile 'com.android.tools.build:gradle:3.4.0'
+    compile 'com.android.tools.build:gradle:3.4.1'
 }
 
 def checkSigning() {
