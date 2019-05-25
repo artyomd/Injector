@@ -1,31 +1,31 @@
-package app.artyomd.injector;
+package app.artyomd.injector.model;
 
-class TextSymbolItem {
+public class TextSymbolItem {
 	private String type;
 	private String clazz;
 	private String name;
 	private String value;
 
-	TextSymbolItem(String type, String clazz, String name, String value) {
+	public TextSymbolItem(String type, String clazz, String name, String value) {
 		this.type = type;
 		this.clazz = clazz;
 		this.name = name;
 		this.value = value;
 	}
 
-	String getType() {
+	public String getType() {
 		return type;
 	}
 
-	String getClazz() {
+	public String getClazz() {
 		return clazz;
 	}
 
-	String getName() {
+	public String getName() {
 		return name;
 	}
 
-	String getValue() {
+	public String getValue() {
 		return value;
 	}
 }

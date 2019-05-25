@@ -1,24 +1,16 @@
-package app.artyomd.injector;
+package app.artyomd.injector.util;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ModuleVersionIdentifier;
+import org.gradle.api.artifacts.ResolvedArtifact;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.List;
-import java.util.Scanner;
+import java.io.*;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-@SuppressWarnings("WeakerAccess")
-class Utils {
-	static void execCommand(String command, String... commands) throws IOException {
+public class Utils {
+	public static void execCommand(String command, String... commands) throws IOException {
 		System.out.print("executing command: " + command + " ");
 		Runtime rt = Runtime.getRuntime();
 		Process process = rt.exec(command);
@@ -58,12 +50,12 @@ class Utils {
 		}
 	}
 
-	static File getWorkingDir(Project project) {
+	public static File getWorkingDir(Project project) {
 		return project.file(project.getBuildDir() + "/exploded-aar/");
 	}
 
 
-	static boolean cmp(String v1, String v2) {
+	public static boolean cmp(String v1, String v2) {
 		String[] numbers1 = v1.split(".");
 		String[] numbers2 = v2.split(".");
 		int minSize = numbers1.length;
@@ -82,7 +74,7 @@ class Utils {
 		return numbers1.length >= numbers2.length;
 	}
 
-	static boolean contains(File file, String string) {
+	public static boolean contains(File file, String string) {
 		try (Scanner scanner = new Scanner(file)) {
 			while (scanner.hasNextLine()) {
 				if (scanner.nextLine().contains(string)) {
@@ -95,7 +87,7 @@ class Utils {
 		return false;
 	}
 
-	static String getFilePackageName(File file) {
+	public static String getFilePackageName(File file) {
 		try (Scanner scanner = new Scanner(file)) {
 			while (scanner.hasNextLine()) {
 				String line = scanner.nextLine();
@@ -145,5 +137,33 @@ class Utils {
 			}
 		}
 		return false;
+	}
+
+	public static void removeOldArtifacts(Set<? extends ResolvedArtifact> artifactsList) {
+		Map<String, Map<String, ResolvedArtifact>> artifacts = new HashMap<>();
+		for (ResolvedArtifact artifact : artifactsList) {
+			ModuleVersionIdentifier id = artifact.getModuleVersion().getId();
+			String name = id.getName();
+			String group = id.getGroup();
+			String version = id.getVersion();
+			if (artifacts.containsKey(group)) {
+				Map<String, ResolvedArtifact> names = artifacts.get(group);
+				if (names.containsKey(name)) {
+					ResolvedArtifact old = names.get(name);
+					if (Utils.cmp(old.getModuleVersion().getId().getVersion(), version)) {
+						names.put(name, artifact);
+						artifactsList.remove(old);
+					} else {
+						artifactsList.remove(artifact);
+					}
+				} else {
+					names.put(name, artifact);
+				}
+			} else {
+				Map<String, ResolvedArtifact> names = new HashMap<>();
+				names.put(name, artifact);
+				artifacts.put(group, names);
+			}
+		}
 	}
 }

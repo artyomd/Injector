@@ -1,43 +1,31 @@
 package app.artyomd.injector;
 
+import app.artyomd.injector.extension.InjectorExtension;
+import app.artyomd.injector.model.AndroidArchiveLibrary;
+import app.artyomd.injector.task.CreateInjectDexes;
+import app.artyomd.injector.util.Utils;
 import com.android.build.gradle.BaseExtension;
 import com.android.build.gradle.api.BaseVariant;
 import com.android.build.gradle.internal.CompileOptions;
 import com.android.build.gradle.internal.tasks.MergeFileTask;
 import com.android.build.gradle.tasks.InvokeManifestMerger;
 import com.android.build.gradle.tasks.ManifestProcessorTask;
-import com.android.build.gradle.tasks.MergeSourceSetFolders;
-import com.android.tools.r8.CompilationFailedException;
-import com.android.tools.r8.D8;
-import com.android.tools.r8.D8Command;
-import com.android.tools.r8.origin.CommandLineOrigin;
-import com.android.tools.r8.utils.ThreadUtils;
 import com.google.common.collect.Iterables;
-
+import groovy.util.XmlSlurper;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.internal.file.collections.ImmutableFileCollection;
+import org.gradle.api.tasks.TaskProvider;
 import org.xml.sax.SAXException;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 import javax.xml.parsers.ParserConfigurationException;
-
-import groovy.util.XmlSlurper;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @SuppressWarnings("WeakerAccess")
 class VariantProcessor {
@@ -45,7 +33,6 @@ class VariantProcessor {
 	private final Project project;
 	private final BaseExtension androidExtension;
 
-	//LibraryVariant
 	private final BaseVariant variant;
 
 	private JavaVersion sourceCompatibilityVersion;
@@ -56,8 +43,6 @@ class VariantProcessor {
 
 	private String variantName;
 	private String projectPackageName;
-
-	private int minApiLevel;
 
 	VariantProcessor(Project project, BaseVariant variant) {
 		this.project = project;
@@ -70,7 +55,6 @@ class VariantProcessor {
 		} catch (IOException | SAXException | ParserConfigurationException e) {
 			e.printStackTrace();
 		}
-		this.minApiLevel = variant.getMergedFlavor().getMinSdkVersion().getApiLevel();
 	}
 
 	public void setAndroidArchiveLibraries(Set<AndroidArchiveLibrary> androidArchiveLibraries) {
@@ -85,7 +69,6 @@ class VariantProcessor {
 		CompileOptions compileOptions = androidExtension.getCompileOptions();
 		sourceCompatibilityVersion = compileOptions.getSourceCompatibility();
 		targetCompatibilityVersion = compileOptions.getTargetCompatibility();
-
 		if (!androidArchiveLibraries.isEmpty()) {
 			extractAARs();
 			processManifest();
@@ -93,9 +76,7 @@ class VariantProcessor {
 			processAssets();
 			processJniLibs();
 		}
-
 		processProguardTxt();
-
 		createDexTask(extension);
 	}
 
@@ -103,69 +84,47 @@ class VariantProcessor {
 	 * merge manifests
 	 */
 	private void processManifest() {
-		Class<InvokeManifestMerger> invokeManifestTaskClazz = null;
-		String className = "com.android.build.gradle.tasks.InvokeManifestMerger";
-		try {
-			invokeManifestTaskClazz = (Class<InvokeManifestMerger>) Class.forName(className);
-		} catch (ClassNotFoundException ignored) {
-		}
-		if (invokeManifestTaskClazz == null) {
-			throw new RuntimeException("Can not find class " + className);
-		}
-		ManifestProcessorTask processManifestTask = Iterables.get(variant.getOutputs(), 0).getProcessManifestProvider().get();
-		InvokeManifestMerger manifestsMergeTask = project.getTasks().create("merge" + variantName + "Manifest", invokeManifestTaskClazz);
-		manifestsMergeTask.setVariantName(variant.getName());
-		manifestsMergeTask.setMainManifestFile(processManifestTask.getAaptFriendlyManifestOutputFile());
-		List<File> list = new ArrayList<>();
-		androidArchiveLibraries.forEach(resolvedArtifact -> list.add((resolvedArtifact).getManifest()));
-		manifestsMergeTask.setSecondaryManifestFiles(list);
-		manifestsMergeTask.setOutputFile(new File(processManifestTask.getManifestOutputDirectory().get().getAsFile(), "AndroidManifest.xml"));
-		manifestsMergeTask.dependsOn(processManifestTask);
-		processManifestTask.finalizedBy(manifestsMergeTask);
+		TaskProvider<InvokeManifestMerger> invokeManifestMergerTaskProvider = project.getTasks().register("merge" + variantName + "Manifest", InvokeManifestMerger.class);
+
+		TaskProvider<ManifestProcessorTask> processManifestTaskTaskProvider = Iterables.get(variant.getOutputs(), 0).getProcessManifestProvider();
+		processManifestTaskTaskProvider.configure(manifestProcessorTask -> manifestProcessorTask.finalizedBy(invokeManifestMergerTaskProvider));
+
+		invokeManifestMergerTaskProvider.configure(manifestsMergeTask -> {
+			manifestsMergeTask.setVariantName(variant.getName());
+			List<File> list = new ArrayList<>();
+			androidArchiveLibraries.forEach(resolvedArtifact -> list.add((resolvedArtifact).getManifest()));
+			manifestsMergeTask.setSecondaryManifestFiles(list);
+
+			manifestsMergeTask.setMainManifestFile(processManifestTaskTaskProvider.get().getAaptFriendlyManifestOutputFile());
+			manifestsMergeTask.setOutputFile(new File(processManifestTaskTaskProvider.get().getManifestOutputDirectory().get().getAsFile(), "AndroidManifest.xml"));
+			manifestsMergeTask.dependsOn(processManifestTaskTaskProvider);
+		});
 	}
 
 	/**
 	 * extract aar
 	 */
 	private void extractAARs() {
-		String taskPath = "preBuild";
-		Task preBuildTask = project.getTasks().findByPath(taskPath);
-		assert preBuildTask != null;
-		preBuildTask.finalizedBy(project.getTasks().findByPath(InjectorPlugin.EXTRACT_AARS_TASK_NAME));
+		project.getTasks().named("preBuild").configure(task ->
+				task.finalizedBy(project.getTasks().named(InjectorPlugin.EXTRACT_AARS_TASK_NAME)));
 	}
 
 	/**
 	 * merge resources
 	 */
 	private void processResourcesAndR() {
-		String taskPath = "generate" + variantName + "Resources";
-		Task resourceGenTask = project.getTasks().findByPath(taskPath);
-		if (resourceGenTask == null) {
-			throw new RuntimeException("Can not find task " + taskPath);
-		}
-		androidArchiveLibraries.forEach(resolvedArtifact -> {
-			File resFolder = (resolvedArtifact).getResFolder();
-			if (resFolder.exists()) {
-				resourceGenTask.getInputs().dir(resFolder);
-			}
-		});
-		resourceGenTask.doFirst(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
-			if ((resolvedArtifact).getResFolder().exists()) {
-				androidExtension.getSourceSets().getByName("main").getRes().srcDir((resolvedArtifact).getResFolder());
-			}
-		}));
-	}
-
-	/**
-	 * generate R.java
-	 */
-	private void processRSources() {
-		androidArchiveLibraries.forEach(resolvedArtifact -> {
-			try {
-				RSourceGenerator.generate(resolvedArtifact, projectPackageName, project.getBuildDir().getAbsolutePath(), variantName, sourceCompatibilityVersion, targetCompatibilityVersion);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		project.getTasks().named("generate" + variantName + "Resources").configure(task -> {
+			androidArchiveLibraries.forEach(resolvedArtifact -> {
+				File resFolder = (resolvedArtifact).getResFolder();
+				if (resFolder.exists()) {
+					task.getInputs().dir(resFolder);
+				}
+			});
+			task.doFirst(task1 -> androidArchiveLibraries.forEach(resolvedArtifact -> {
+				if ((resolvedArtifact).getResFolder().exists()) {
+					androidExtension.getSourceSets().getByName("main").getRes().srcDir((resolvedArtifact).getResFolder());
+				}
+			}));
 		});
 	}
 
@@ -173,42 +132,40 @@ class VariantProcessor {
 	 * merge assets
 	 */
 	private void processAssets() {
-		MergeSourceSetFolders assetsTask = variant.getMergeAssetsProvider().get();
-		androidArchiveLibraries.forEach(resolvedArtifact -> {
-			File assetsFolder = resolvedArtifact.getAssetsFolder();
-			if ((assetsFolder.exists())) {
-				assetsTask.getInputs().dir(assetsFolder);
-			}
+		variant.getMergeAssetsProvider().configure(mergeSourceSetFolders -> {
+			androidArchiveLibraries.forEach(resolvedArtifact -> {
+				File assetsFolder = resolvedArtifact.getAssetsFolder();
+				if ((assetsFolder.exists())) {
+					mergeSourceSetFolders.getInputs().dir(assetsFolder);
+				}
+			});
+			mergeSourceSetFolders.doFirst(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
+				File assetsFolder = (resolvedArtifact).getAssetsFolder();
+				if (assetsFolder.exists()) {
+					androidExtension.getSourceSets().getByName("main").getAssets().srcDir(assetsFolder);
+				}
+			}));
 		});
-		assetsTask.doFirst(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
-			File assetsFolder = (resolvedArtifact).getAssetsFolder();
-			if (assetsFolder.exists()) {
-				androidExtension.getSourceSets().getByName("main").getAssets().srcDir(assetsFolder);
-			}
-		}));
 	}
 
 	/**
 	 * merge jniLibs
 	 */
 	private void processJniLibs() {
-		String taskPath = "merge" + variantName + "JniLibFolders";
-		Task mergeJniLibsTask = project.getTasks().findByPath(taskPath);
-		if (mergeJniLibsTask == null) {
-			throw new RuntimeException("Can not find task " + taskPath);
-		}
-		androidArchiveLibraries.forEach(resolvedArtifact -> {
-			File jniFolder = resolvedArtifact.getJniFolder();
-			if (jniFolder.exists()) {
-				mergeJniLibsTask.getInputs().dir(jniFolder);
-			}
+		project.getTasks().named("merge" + variantName + "JniLibFolders").configure(mergeJniLibsTask -> {
+			androidArchiveLibraries.forEach(resolvedArtifact -> {
+				File jniFolder = resolvedArtifact.getJniFolder();
+				if (jniFolder.exists()) {
+					mergeJniLibsTask.getInputs().dir(jniFolder);
+				}
+			});
+			mergeJniLibsTask.doFirst(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
+				File jniFolder = resolvedArtifact.getJniFolder();
+				if (jniFolder.exists()) {
+					androidExtension.getSourceSets().getByName("main").getJniLibs().srcDir(jniFolder);
+				}
+			}));
 		});
-		mergeJniLibsTask.doFirst(task -> androidArchiveLibraries.forEach(resolvedArtifact -> {
-			File jniFolder = resolvedArtifact.getJniFolder();
-			if (jniFolder.exists()) {
-				androidExtension.getSourceSets().getByName("main").getJniLibs().srcDir(jniFolder);
-			}
-		}));
 	}
 
 	@Nonnull
@@ -241,12 +198,7 @@ class VariantProcessor {
 	 * merge proguard.txt
 	 */
 	private void processProguardTxt() {
-		String taskPath = "merge" + variantName + "ConsumerProguardFiles";
-		MergeFileTask mergeFileTask = (MergeFileTask) project.getTasks().findByPath(taskPath);
-		if (mergeFileTask == null) {
-			throw new RuntimeException("Can not find task " + taskPath);
-		}
-		mergeFileTask.doFirst(task -> {
+		project.getTasks().named("merge" + variantName + "ConsumerProguardFiles", MergeFileTask.class).configure(mergeFileTask -> mergeFileTask.doFirst(task -> {
 			Set<File> inputFiles = new HashSet<>(mergeFileTask.getInputFiles().getFiles());
 			androidArchiveLibraries.forEach(androidArchiveLibrary -> {
 				File thirdProguard = androidArchiveLibrary.getProguardRules();
@@ -257,75 +209,22 @@ class VariantProcessor {
 			});
 			inputFiles.add(getExternalLibsProguard());
 			mergeFileTask.setInputFiles(ImmutableFileCollection.of(inputFiles));
-		});
+		}));
 	}
 
 	private void createDexTask(InjectorExtension extension) {
-		Task createDexesTask = project.getTasks().create("createInject" + variantName + "Dexes", Task.class);
-		createDexesTask.doFirst(task -> {
-			if (!extension.isEnabled()) {
-				return;
-			}
-			processRSources();
-			List<ResolvedArtifact> artifacts = new ArrayList<>(androidArchiveLibraries);
-			artifacts.addAll(jarFiles);
-			Map<String, List<ResolvedArtifact>> dexs = extension.getDexes(artifacts);
-			List<List<String>> dexOptions = new ArrayList<>();
-			String outFilePath = project.getBuildDir().getAbsolutePath() + extension.getDexLocation();
-			dexs.forEach((key, value) -> {
-				if (!value.isEmpty()) {
-					String outPutDex = outFilePath + key + ".zip";
-					List<String> dexOption = new ArrayList<>();
-					dexOption.add("--release");
-					dexOption.add("--output");
-					dexOption.add(outPutDex);
-					dexOption.add("--min-api");
-					dexOption.add(Integer.toString(minApiLevel));
-					value.forEach(resolvedArtifact -> {
-						if (resolvedArtifact instanceof AndroidArchiveLibrary) {
-							File classesJar = ((AndroidArchiveLibrary) resolvedArtifact).getClassesJarFile();
-							if (classesJar.exists()) {
-								dexOption.add(classesJar.getAbsolutePath());
-							}
-						} else {
-							File classesJar = resolvedArtifact.getFile();
-							if (classesJar.exists()) {
-								dexOption.add(classesJar.getAbsolutePath());
-							}
-						}
-					});
-					dexOptions.add(dexOption);
-				}
-			});
-			File outFile = new File(outFilePath);
-			if (!outFile.exists()) {
-				outFile.mkdirs();
-			}
+		TaskProvider<CreateInjectDexes> taskProvider = project.getTasks().register("createInject" + variantName + "Dexes",
+				CreateInjectDexes.class, extension, projectPackageName, variantName, project.getBuildDir().getAbsolutePath(),
+				androidArchiveLibraries, jarFiles, variant.getMergedFlavor().getMinSdkVersion().getApiLevel(),
+				sourceCompatibilityVersion, targetCompatibilityVersion);
 
-			for (List<String> dexOption : dexOptions) {
-				D8Command command;
-				ExecutorService executor = ThreadUtils.getExecutorService(-1);
-				try {
-					command = D8Command.parse(dexOption.toArray(new String[0]), CommandLineOrigin.INSTANCE).build();
-					D8.run(command, executor);
-				} catch (CompilationFailedException e) {
-					e.printStackTrace();
-				} finally {
-					executor.shutdown();
-				}
-				try {
-					executor.awaitTermination(30, TimeUnit.MINUTES);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
+		taskProvider.configure(createInjectDexes -> {
+			TaskProvider extractAARsTask = project.getTasks().named(InjectorPlugin.EXTRACT_AARS_TASK_NAME);
+			TaskProvider assembleTask = project.getTasks().named("assemble" + variantName);
+			TaskProvider rGenerationTask = project.getTasks().named("generate" + variantName + "RFile");
+			createInjectDexes.dependsOn(extractAARsTask);
+			createInjectDexes.dependsOn(rGenerationTask);
+			createInjectDexes.dependsOn(assembleTask);
 		});
-
-		Task extractAARsTask = project.getTasks().findByPath(InjectorPlugin.EXTRACT_AARS_TASK_NAME);
-		Task assembleTask = project.getTasks().findByPath("assemble" + variantName);
-		Task rGenerationTask = project.getTasks().findByPath("generate" + variantName+"RFile");
-		createDexesTask.dependsOn(extractAARsTask);
-		createDexesTask.dependsOn(rGenerationTask);
-		createDexesTask.dependsOn(assembleTask);
 	}
 }

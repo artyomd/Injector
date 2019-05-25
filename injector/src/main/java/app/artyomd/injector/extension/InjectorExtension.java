@@ -1,5 +1,6 @@
-package app.artyomd.injector;
+package app.artyomd.injector.extension;
 
+import app.artyomd.injector.util.Utils;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -9,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@SuppressWarnings({"unused", "WeakerAccess"})
+@SuppressWarnings({"unused"})
 public class InjectorExtension {
 	private boolean enabled = true;
 	private List<String> defaultExcludeGroups = new ArrayList<>();
@@ -43,6 +44,10 @@ public class InjectorExtension {
 		return dexLocation;
 	}
 
+	public void setDexLocation(String dexLocation) {
+		this.dexLocation = dexLocation;
+	}
+
 	public void setExcludeGroups(List<String> excludeGroups) {
 		this.excludeGroups = excludeGroups;
 	}
@@ -57,10 +62,6 @@ public class InjectorExtension {
 
 	public void setForceExcludeGroups(List<String> forceExcludeGroups) {
 		this.forceExcludeGroups = forceExcludeGroups;
-	}
-
-	public void setDexLocation(String dexLocation) {
-		this.dexLocation = dexLocation;
 	}
 
 	public void setDefaultDexName(String defaultDexName) {

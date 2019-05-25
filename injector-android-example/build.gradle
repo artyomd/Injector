@@ -9,9 +9,18 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:3.4.0"
+        classpath 'com.android.tools.build:gradle:3.4.1'
         classpath "app.artyomd.injector:injector:${VERSION_NAME}"
     }
+}
+
+plugins {
+    id 'com.gradle.build-scan' version '2.3'
+}
+
+buildScan {
+    termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+    termsOfServiceAgree = 'yes'
 }
 
 allprojects {

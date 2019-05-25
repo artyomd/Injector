@@ -1,5 +1,6 @@
-package app.artyomd.injector;
+package app.artyomd.injector.model;
 
+import app.artyomd.injector.util.Utils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -13,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-@SuppressWarnings({"unused", "WeakerAccess"})
+@SuppressWarnings({"unused"})
 public class AndroidArchiveLibrary implements ResolvedArtifact {
 
 	private final Project project;
