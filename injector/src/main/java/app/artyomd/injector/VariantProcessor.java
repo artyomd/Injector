@@ -21,7 +21,11 @@ import org.xml.sax.SAXException;
 
 import javax.annotation.Nonnull;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -38,8 +42,8 @@ class VariantProcessor {
 	private JavaVersion sourceCompatibilityVersion;
 	private JavaVersion targetCompatibilityVersion;
 
-	private Set<AndroidArchiveLibrary> androidArchiveLibraries;
-	private Set<ResolvedArtifact> jarFiles;
+	private Set<? extends AndroidArchiveLibrary> androidArchiveLibraries;
+	private Set<? extends ResolvedArtifact> jarFiles;
 
 	private String variantName;
 	private String projectPackageName;
@@ -51,18 +55,19 @@ class VariantProcessor {
 		this.variantName = variant.getName();
 		this.variantName = variantName.substring(0, 1).toUpperCase() + variantName.substring(1);
 		try {
-			projectPackageName = new XmlSlurper().parse(androidExtension.getSourceSets().getByName("main").getManifest().getSrcFile()).getProperty("@package").toString();
+			projectPackageName = new XmlSlurper().parse(androidExtension.getSourceSets().getByName("main").getManifest()
+					.getSrcFile()).getProperty("@package").toString();
 		} catch (IOException | SAXException | ParserConfigurationException e) {
 			e.printStackTrace();
 		}
 	}
 
-	public void setAndroidArchiveLibraries(Set<AndroidArchiveLibrary> androidArchiveLibraries) {
-		this.androidArchiveLibraries = androidArchiveLibraries;
+	public void setAndroidArchiveLibraries(Set<? extends AndroidArchiveLibrary> androidArchiveLibraries) {
+		this.androidArchiveLibraries = new HashSet<>(androidArchiveLibraries);
 	}
 
-	public void setJarFiles(Set<ResolvedArtifact> jarFiles) {
-		this.jarFiles = jarFiles;
+	public void setJarFiles(Set<? extends ResolvedArtifact> jarFiles) {
+		this.jarFiles = new HashSet<>(jarFiles);
 	}
 
 	public void processVariant(InjectorExtension extension) {
@@ -219,9 +224,9 @@ class VariantProcessor {
 				sourceCompatibilityVersion, targetCompatibilityVersion);
 
 		taskProvider.configure(createInjectDexes -> {
-			TaskProvider extractAARsTask = project.getTasks().named(InjectorPlugin.EXTRACT_AARS_TASK_NAME);
-			TaskProvider assembleTask = project.getTasks().named("assemble" + variantName);
-			TaskProvider rGenerationTask = project.getTasks().named("generate" + variantName + "RFile");
+			TaskProvider<?> extractAARsTask = project.getTasks().named(InjectorPlugin.EXTRACT_AARS_TASK_NAME);
+			TaskProvider<?> assembleTask = project.getTasks().named("assemble" + variantName);
+			TaskProvider<?> rGenerationTask = project.getTasks().named("generate" + variantName + "RFile");
 			createInjectDexes.dependsOn(extractAARsTask);
 			createInjectDexes.dependsOn(rGenerationTask);
 			createInjectDexes.dependsOn(assembleTask);

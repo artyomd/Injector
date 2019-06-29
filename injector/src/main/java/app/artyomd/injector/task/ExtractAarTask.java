@@ -3,7 +3,6 @@ package app.artyomd.injector.task;
 import app.artyomd.injector.model.AndroidArchiveLibrary;
 import app.artyomd.injector.util.Utils;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
@@ -14,16 +13,16 @@ import java.util.function.Consumer;
 
 public class ExtractAarTask extends DefaultTask {
 
-	private Set<AndroidArchiveLibrary> androidArchiveLibraries = new HashSet<>();
+	private Set<? extends AndroidArchiveLibrary> androidArchiveLibraries = new HashSet<>();
 
-	public void setAndroidArchiveLibraries(Set<AndroidArchiveLibrary> androidArchiveLibraries) {
-		this.androidArchiveLibraries = androidArchiveLibraries;
+	public void setAndroidArchiveLibraries(Set<? extends AndroidArchiveLibrary> androidArchiveLibraries) {
+		this.androidArchiveLibraries = new HashSet<>(androidArchiveLibraries);
 	}
 
 	@TaskAction
 	void extractAArs() {
-		androidArchiveLibraries.forEach((Consumer<ResolvedArtifact>) resolvedArtifact -> {
-			String extractedAarPath = ((AndroidArchiveLibrary) resolvedArtifact).getRootFolder().getAbsolutePath();
+		androidArchiveLibraries.forEach((Consumer<AndroidArchiveLibrary>) resolvedArtifact -> {
+			String extractedAarPath = (resolvedArtifact).getRootFolder().getAbsolutePath();
 			File extractedAar = new File(extractedAarPath);
 			if (!extractedAar.exists()) {
 				try {

@@ -30,7 +30,6 @@ import java.util.Map;
 
 @SuppressWarnings("WeakerAccess")
 public class RSourceGenerator {
-
 	public static void generate(@Nonnull AndroidArchiveLibrary androidLibrary, @Nonnull String libPackageName, @Nonnull String buildDir, @Nonnull String variant, JavaVersion projectSourceVersion, JavaVersion projectTargetVersion) throws IOException {
 		File symbolFile = androidLibrary.getSymbolFile();
 		File manifestFile = androidLibrary.getManifest();

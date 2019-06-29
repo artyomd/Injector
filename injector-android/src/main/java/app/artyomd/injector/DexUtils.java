@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 public class DexUtils {
@@ -21,13 +22,11 @@ public class DexUtils {
 	 * @param context context
 	 * @param list    list with dex files
 	 */
-	public static void loadDex(Context context, List<File> list) {
-		try {
-			File optimizedDir = context.getDir("outdex", Context.MODE_PRIVATE);
-			DexInjector.installSecondaryDexes(context.getClassLoader(), optimizedDir, list);
-		} catch (Exception ex) {
-			Log.e(TAG, ex.toString());
-		}
+	public static void loadDex(Context context, List<File> list) throws IllegalAccessException,
+			IOException, InstantiationException, ClassNotFoundException, NoSuchMethodException,
+			InvocationTargetException, NoSuchFieldException {
+		File optimizedDir = context.getDir("outdex", Context.MODE_PRIVATE);
+		DexInjector.installSecondaryDexes(context.getClassLoader(), optimizedDir, list);
 	}
 
 	/**
