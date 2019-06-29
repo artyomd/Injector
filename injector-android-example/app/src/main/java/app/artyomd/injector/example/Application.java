@@ -1,12 +1,10 @@
 package app.artyomd.injector.example;
 
-import app.artyomd.injector.DexUtils;
-
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+
+import app.artyomd.injector.DexUtils;
 
 public class Application extends android.app.Application {
 	@Override
