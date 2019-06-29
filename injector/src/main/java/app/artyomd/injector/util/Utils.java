@@ -1,11 +1,28 @@
 package app.artyomd.injector.util;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
+import org.gradle.api.internal.artifacts.dependencies.DefaultSelfResolvingDependency;
+import org.gradle.api.internal.file.DefaultFileCollectionFactory;
+import org.gradle.api.internal.file.IdentityFileResolver;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -150,7 +167,7 @@ public class Utils {
 				Map<String, ResolvedArtifact> names = artifacts.get(group);
 				if (names.containsKey(name)) {
 					ResolvedArtifact old = names.get(name);
-					if (Utils.cmp(old.getModuleVersion().getId().getVersion(), version)) {
+					if (cmp(old.getModuleVersion().getId().getVersion(), version)) {
 						names.put(name, artifact);
 						artifactsList.remove(old);
 					} else {
@@ -165,5 +182,16 @@ public class Utils {
 				artifacts.put(group, names);
 			}
 		}
+	}
+
+	public static Dependency createDependencyFrom(ResolvedArtifact resolvedArtifact) {
+		ModuleVersionIdentifier identifier = resolvedArtifact.getModuleVersion().getId();
+		return identifier.getGroup().isEmpty() ? new DefaultSelfResolvingDependency(
+				resolvedArtifact.getId().getComponentIdentifier(),
+				new DefaultFileCollectionFactory(new IdentityFileResolver(), null).fixed(resolvedArtifact.getFile())
+		) : new DefaultExternalModuleDependency(
+				identifier.getGroup(),
+				identifier.getName(),
+				identifier.getVersion());
 	}
 }

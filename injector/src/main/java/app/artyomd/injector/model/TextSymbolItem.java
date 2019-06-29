@@ -1,5 +1,6 @@
 package app.artyomd.injector.model;
 
+@SuppressWarnings("unused")
 public class TextSymbolItem {
 	private String type;
 	private String clazz;

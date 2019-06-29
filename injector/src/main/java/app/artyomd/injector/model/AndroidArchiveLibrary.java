@@ -14,9 +14,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-@SuppressWarnings({"unused"})
+@SuppressWarnings("unused")
 public class AndroidArchiveLibrary implements ResolvedArtifact {
-
 	private final Project project;
 	private final ResolvedArtifact artifact;
 

@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@SuppressWarnings({"unused"})
+@SuppressWarnings("unused")
 public class InjectorExtension {
 	private boolean enabled = true;
 	private List<String> defaultExcludeGroups = new ArrayList<>();
@@ -19,7 +19,7 @@ public class InjectorExtension {
 	private List<String> forceExcludeNames = new ArrayList<>();
 	private List<String> forceExcludeGroups = new ArrayList<>();
 	private String dexLocation = "/outputs/inject/";
-	private String defaultDexName = "inject.dex";
+	private String defaultDexName = "inject";
 	private Map<String, List<String>> groups = new HashMap<>();
 
 	public InjectorExtension() {
@@ -49,69 +49,65 @@ public class InjectorExtension {
 	}
 
 	public void setExcludeGroups(List<String> excludeGroups) {
-		this.excludeGroups = excludeGroups;
+		this.excludeGroups = new ArrayList<>(excludeGroups);
 	}
 
 	public void setExcludeNames(List<String> excludeNames) {
-		this.excludeNames = excludeNames;
+		this.excludeNames = new ArrayList<>(excludeNames);
 	}
 
 	public void setForceExcludeNames(List<String> forceExcludeNames) {
-		this.forceExcludeNames = forceExcludeNames;
+		this.forceExcludeNames = new ArrayList<>(forceExcludeNames);
 	}
 
 	public void setForceExcludeGroups(List<String> forceExcludeGroups) {
-		this.forceExcludeGroups = forceExcludeGroups;
+		this.forceExcludeGroups = new ArrayList<>(forceExcludeGroups);
 	}
 
 	public void setDefaultDexName(String defaultDexName) {
 		this.defaultDexName = defaultDexName;
 	}
 
-	public void setGroups(Map<String, List<String>> groups) {
-		this.groups = groups;
+	public void setGroups(Map<String, ? extends List<String>> groups) {
+		this.groups = new HashMap<>(groups);
 	}
 
-	public boolean checkArtifact(ResolvedArtifact artifact) {
+	public boolean isExcluded(ResolvedArtifact artifact) {
 		ModuleVersionIdentifier id = artifact.getModuleVersion().getId();
-		return checkGroup(id.getGroup()) && checkName(id.getName());
+		return isGroupExcluded(id.getGroup()) || isNameExcluded(id.getName());
 	}
 
-	public boolean checkForceExcluded(ResolvedArtifact artifact) {
+	public boolean isExcluded(Dependency dependency) {
+		return isGroupExcluded(dependency.getGroup()) || isNameExcluded(dependency.getName());
+	}
+
+	private boolean isNameExcluded(String name) {
+		return Utils.listContainsMatcher(name, excludeNames);
+	}
+
+	private boolean isGroupExcluded(String group) {
+		return group != null && (Utils.listContainsMatcher(group, defaultExcludeGroups)
+				|| Utils.listContainsMatcher(group, excludeGroups));
+	}
+
+	public boolean isForceExcluded(ResolvedArtifact artifact) {
 		ModuleVersionIdentifier id = artifact.getModuleVersion().getId();
-		String name = id.getName();
-		String group = id.getGroup();
-		return Utils.listContainsMatcher(name, forceExcludeNames) || Utils.listContainsMatcher(group, forceExcludeGroups);
+		return isGroupForceExcluded(id.getGroup()) || isNameForceExcluded(id.getName());
 	}
 
-	public boolean checkForceExcluded(Dependency dependency) {
-		String name = dependency.getName();
-		for (String excludeName : forceExcludeNames) {
-			if (name.matches(excludeName)) {
-				return true;
-			}
-		}
-		String group = dependency.getGroup();
-		if (group != null) {
-			for (String excludeName : forceExcludeGroups) {
-				if (group.matches(excludeName)) {
-					return true;
-				}
-			}
-		}
-		return false;
+	public boolean isForceExcluded(Dependency dependency) {
+		return isGroupForceExcluded(dependency.getGroup()) || isNameForceExcluded(dependency.getName());
 	}
 
-	public boolean checkName(String name) {
-		return !Utils.listContainsMatcher(name, excludeNames);
+	private boolean isNameForceExcluded(String name) {
+		return Utils.listContainsMatcher(name, forceExcludeNames);
 	}
 
-	public boolean checkGroup(String group) {
-		return !Utils.listContainsMatcher(group, defaultExcludeGroups)
-				&& !Utils.listContainsMatcher(group, excludeGroups);
+	private boolean isGroupForceExcluded(String group) {
+		return group != null && Utils.listContainsMatcher(group, forceExcludeGroups);
 	}
 
-	public Map<String, List<ResolvedArtifact>> getDexes(List<ResolvedArtifact> artifacts) {
+	public Map<String, List<ResolvedArtifact>> getDexes(List<? extends ResolvedArtifact> artifacts) {
 		Map<String, List<ResolvedArtifact>> dexMap = new HashMap<>();
 		artifacts.forEach(resolvedArtifact -> {
 			List<String> names = getDexName(resolvedArtifact);

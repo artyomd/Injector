@@ -10,8 +10,7 @@ import com.android.build.gradle.api.BaseVariant;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.DependencyResolutionListener;
-import org.gradle.api.artifacts.ResolvableDependencies;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.tasks.TaskProvider;
 import org.jetbrains.annotations.NotNull;
@@ -32,12 +31,13 @@ public class InjectorPlugin implements Plugin<Project> {
 	private Set<AndroidArchiveLibrary> aars;
 
 	@Override
-	public void apply(@NotNull Project project) {
-		this.project = project;
+	public void apply(@NotNull Project target) {
+		this.project = target;
 		createExtension();
 		createConfiguration();
 		createExtractAARsTask();
-		project.afterEvaluate(project1 -> {
+		target.afterEvaluate(project1 -> {
+			System.out.println("After evaluate");
 			resolveArtifacts();
 			if (jars.isEmpty() && aars.isEmpty()) {
 				return;
@@ -63,24 +63,6 @@ public class InjectorPlugin implements Plugin<Project> {
 		injectConf = project.getConfigurations().create("inject");
 		injectConf.setVisible(false);
 		injectConf.setTransitive(true);
-		project.getGradle().addListener(new DependencyResolutionListener() {
-			@Override
-			public void beforeResolve(@NotNull ResolvableDependencies dependencies) {
-				injectConf.getDependencies().forEach(dependency -> {
-					if (extension.checkGroup(dependency.getGroup()) && extension.checkName(dependency.getName())) {
-						project.getDependencies().add("compileOnly", dependency);
-					} else if (!extension.checkForceExcluded(dependency)) {
-						project.getDependencies().add("implementation", dependency);
-					}
-				});
-				project.getGradle().removeListener(this);
-			}
-
-			@Override
-			public void afterResolve(@NotNull ResolvableDependencies dependencies) {
-				//Nothing to do
-			}
-		});
 	}
 
 	private void createExtractAARsTask() {
@@ -91,13 +73,28 @@ public class InjectorPlugin implements Plugin<Project> {
 	private void resolveArtifacts() {
 		Set<ResolvedArtifact> jars = new HashSet<>();
 		Set<AndroidArchiveLibrary> aars = new HashSet<>();
+
 		injectConf.getResolvedConfiguration().getResolvedArtifacts().forEach(resolvedArtifact -> {
-			if (extension.checkArtifact(resolvedArtifact) && !extension.checkForceExcluded(resolvedArtifact)) {
+			Dependency dependency = Utils.createDependencyFrom(resolvedArtifact);
+			if (!extension.isExcluded(resolvedArtifact) && !extension.isForceExcluded(resolvedArtifact)) {
 				System.out.println("inject-->[injection detected][" + resolvedArtifact.getType() + ']' + resolvedArtifact.getModuleVersion().getId());
 				if ("jar".equals(resolvedArtifact.getType())) {
 					jars.add(resolvedArtifact);
 				} else if ("aar".equals(resolvedArtifact.getType())) {
 					aars.add(new AndroidArchiveLibrary(project, resolvedArtifact));
+				}
+
+				System.out.println("compileOnly:" + resolvedArtifact.getName());
+				project.getDependencies().add("compileOnly", dependency);
+			} else {
+				System.out.println("inject-->[injection skipped][" + resolvedArtifact.getType() + ']' + resolvedArtifact.getModuleVersion().getId());
+
+				if (extension.isForceExcluded(dependency)) {
+					System.out.println("implementation:" + dependency.getName());
+					project.getDependencies().add("implementation", dependency);
+				} else {
+					System.out.println("compileOnly:" + resolvedArtifact.getName());
+					project.getDependencies().add("compileOnly", dependency);
 				}
 			}
 		});
