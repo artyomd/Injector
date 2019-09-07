@@ -3,8 +3,6 @@ package app.artyomd.injector;
 import android.os.Build;
 import android.util.Log;
 
-import dalvik.system.DexFile;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -16,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.zip.ZipFile;
+
+import dalvik.system.DexFile;
 
 public final class DexInjector {
 	private static final String TAG = DexInjector.class.getSimpleName();
