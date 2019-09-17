@@ -12,14 +12,12 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
-import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.tasks.TaskProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 
 public class InjectorPlugin implements Plugin<Project> {
 
