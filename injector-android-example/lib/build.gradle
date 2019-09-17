@@ -23,5 +23,4 @@ dependencies {
 }
 injectConfig {
     enabled = true
-    forceExcludeGroups = ["com.squareup.okio"]
 }

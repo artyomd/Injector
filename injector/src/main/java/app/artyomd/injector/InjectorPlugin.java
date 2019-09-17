@@ -12,12 +12,14 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.tasks.TaskProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class InjectorPlugin implements Plugin<Project> {
 
@@ -74,29 +76,33 @@ public class InjectorPlugin implements Plugin<Project> {
 		Set<ResolvedArtifact> jars = new HashSet<>();
 		Set<AndroidArchiveLibrary> aars = new HashSet<>();
 
-		injectConf.getResolvedConfiguration().getResolvedArtifacts().forEach(resolvedArtifact -> {
-			Dependency dependency = Utils.createDependencyFrom(resolvedArtifact);
-			if (!extension.isExcluded(resolvedArtifact) && !extension.isForceExcluded(resolvedArtifact)) {
-				System.out.println("inject-->[injection detected][" + resolvedArtifact.getType() + ']' + resolvedArtifact.getModuleVersion().getId());
-				if ("jar".equals(resolvedArtifact.getType())) {
-					jars.add(resolvedArtifact);
-				} else if ("aar".equals(resolvedArtifact.getType())) {
-					aars.add(new AndroidArchiveLibrary(project, resolvedArtifact));
-				}
-
-				System.out.println("compileOnly:" + resolvedArtifact.getName());
-				project.getDependencies().add("compileOnly", dependency);
-			} else {
-				System.out.println("inject-->[injection skipped][" + resolvedArtifact.getType() + ']' + resolvedArtifact.getModuleVersion().getId());
-
-				if (extension.isForceExcluded(dependency)) {
+		injectConf.getResolvedConfiguration().getFirstLevelModuleDependencies().forEach(resolvedDependency -> {
+			Set<ResolvedArtifact> dResolvedArtifacts = resolvedDependency.getModuleArtifacts();
+			Set<ResolvedArtifact> cResolvedArtifacts = resolvedDependency.getAllModuleArtifacts();
+			cResolvedArtifacts.removeAll(dResolvedArtifacts);
+			dResolvedArtifacts.forEach(resolvedArtifact -> {
+				Dependency dependency = Utils.createDependencyFrom(resolvedArtifact);
+				if (extension.isExcluded(resolvedArtifact)) {
+					System.out.println("inject-->[injection skipped][" + resolvedArtifact.getType() + ']' + resolvedArtifact.getModuleVersion().getId());
 					System.out.println("implementation:" + dependency.getName());
 					project.getDependencies().add("implementation", dependency);
 				} else {
+					System.out.println("inject-->[injection detected][" + resolvedArtifact.getType() + ']' + resolvedArtifact.getModuleVersion().getId());
+					if ("jar".equals(resolvedArtifact.getType())) {
+						jars.add(resolvedArtifact);
+					} else if ("aar".equals(resolvedArtifact.getType())) {
+						aars.add(new AndroidArchiveLibrary(project, resolvedArtifact));
+					}
+
 					System.out.println("compileOnly:" + resolvedArtifact.getName());
 					project.getDependencies().add("compileOnly", dependency);
 				}
-			}
+			});
+			cResolvedArtifacts.forEach(resolvedArtifact -> {
+				Dependency dependency = Utils.createDependencyFrom(resolvedArtifact);
+				System.out.println("implementation:" + resolvedArtifact.getName());
+				project.getDependencies().add("implementation", dependency);
+			});
 		});
 		this.jars = Collections.unmodifiableSet(jars);
 		this.aars = Collections.unmodifiableSet(aars);

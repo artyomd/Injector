@@ -16,8 +16,6 @@ public class InjectorExtension {
 	private List<String> defaultExcludeGroups = new ArrayList<>();
 	private List<String> excludeGroups = new ArrayList<>();
 	private List<String> excludeNames = new ArrayList<>();
-	private List<String> forceExcludeNames = new ArrayList<>();
-	private List<String> forceExcludeGroups = new ArrayList<>();
 	private String dexLocation = "/outputs/inject/";
 	private String defaultDexName = "inject";
 	private Map<String, List<String>> groups = new HashMap<>();
@@ -29,7 +27,8 @@ public class InjectorExtension {
 	}
 
 	private static boolean checkContains(ResolvedArtifact artifact, List<String> data) {
-		return data.contains(artifact.getModuleVersion().getId().getGroup()) || data.contains(artifact.getModuleVersion().getId().getName());
+		return data.contains(artifact.getModuleVersion().getId().getGroup()) ||
+				data.contains(artifact.getModuleVersion().getId().getName());
 	}
 
 	public boolean isEnabled() {
@@ -56,14 +55,6 @@ public class InjectorExtension {
 		this.excludeNames = new ArrayList<>(excludeNames);
 	}
 
-	public void setForceExcludeNames(List<String> forceExcludeNames) {
-		this.forceExcludeNames = new ArrayList<>(forceExcludeNames);
-	}
-
-	public void setForceExcludeGroups(List<String> forceExcludeGroups) {
-		this.forceExcludeGroups = new ArrayList<>(forceExcludeGroups);
-	}
-
 	public void setDefaultDexName(String defaultDexName) {
 		this.defaultDexName = defaultDexName;
 	}
@@ -86,25 +77,8 @@ public class InjectorExtension {
 	}
 
 	private boolean isGroupExcluded(String group) {
-		return group != null && (Utils.listContainsMatcher(group, defaultExcludeGroups)
+		return null != group && (Utils.listContainsMatcher(group, defaultExcludeGroups)
 				|| Utils.listContainsMatcher(group, excludeGroups));
-	}
-
-	public boolean isForceExcluded(ResolvedArtifact artifact) {
-		ModuleVersionIdentifier id = artifact.getModuleVersion().getId();
-		return isGroupForceExcluded(id.getGroup()) || isNameForceExcluded(id.getName());
-	}
-
-	public boolean isForceExcluded(Dependency dependency) {
-		return isGroupForceExcluded(dependency.getGroup()) || isNameForceExcluded(dependency.getName());
-	}
-
-	private boolean isNameForceExcluded(String name) {
-		return Utils.listContainsMatcher(name, forceExcludeNames);
-	}
-
-	private boolean isGroupForceExcluded(String group) {
-		return group != null && Utils.listContainsMatcher(group, forceExcludeGroups);
 	}
 
 	public Map<String, List<ResolvedArtifact>> getDexes(List<? extends ResolvedArtifact> artifacts) {
