@@ -189,7 +189,7 @@ class VariantProcessor {
 		try (FileWriter fw = new FileWriter(proguardFile.getAbsolutePath(), true);
 		     BufferedWriter bw = new BufferedWriter(fw);
 		     PrintWriter out = new PrintWriter(bw)) {
-			androidArchiveLibraries.forEach(resolvedArtifact -> out.println("\n-libraryjars " + resolvedArtifact.getFile().getAbsolutePath()));
+			androidArchiveLibraries.forEach(resolvedArtifact -> out.println("\n-libraryjars " + resolvedArtifact.getClassesJarFile().getAbsolutePath()));
 			jarFiles.forEach(resolvedArtifact -> out.println("\n-libraryjars " + resolvedArtifact.getFile().getAbsolutePath()));
 			out.println("-keep class " + projectPackageName + ".R" + " { *; }");
 			out.println("-keep class " + projectPackageName + ".R$*" + " { *; }");
@@ -203,18 +203,21 @@ class VariantProcessor {
 	 * merge proguard.txt
 	 */
 	private void processProguardTxt() {
-		project.getTasks().named("merge" + variantName + "ConsumerProguardFiles", MergeFileTask.class).configure(mergeFileTask -> mergeFileTask.doFirst(task -> {
-			Set<File> inputFiles = new HashSet<>(mergeFileTask.getInputFiles().getFiles());
-			androidArchiveLibraries.forEach(androidArchiveLibrary -> {
-				File thirdProguard = androidArchiveLibrary.getProguardRules();
-				if (!thirdProguard.exists()) {
-					return;
-				}
-				inputFiles.add(thirdProguard);
+		project.getTasks().named("merge" + variantName + "ConsumerProguardFiles", MergeFileTask.class).configure(mergeFileTask -> {
+			mergeFileTask.dependsOn(project.getTasks().named(InjectorPlugin.EXTRACT_AARS_TASK_NAME));
+			mergeFileTask.doFirst(task -> {
+				Set<File> inputFiles = new HashSet<>(mergeFileTask.getInputFiles().getFiles());
+				androidArchiveLibraries.forEach(androidArchiveLibrary -> {
+					File thirdProguard = androidArchiveLibrary.getProguardRules();
+					if (!thirdProguard.exists()) {
+						return;
+					}
+					inputFiles.add(thirdProguard);
+				});
+				inputFiles.add(getExternalLibsProguard());
+				mergeFileTask.setInputFiles(ImmutableFileCollection.of(inputFiles));
 			});
-			inputFiles.add(getExternalLibsProguard());
-			mergeFileTask.setInputFiles(ImmutableFileCollection.of(inputFiles));
-		}));
+		});
 	}
 
 	private void createDexTask(InjectorExtension extension) {

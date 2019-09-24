@@ -11,6 +11,12 @@ android {
     lintOptions {
         abortOnError false
     }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt')
+        }
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -18,7 +24,7 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.1.0'
+    api 'androidx.fragment:fragment:1.1.0'
     inject 'com.airbnb.android:lottie:3.0.7'
 }
 injectConfig {

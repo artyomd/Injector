@@ -22,7 +22,7 @@ public class ExtractAarTask extends DefaultTask {
 	@TaskAction
 	void extractAArs() {
 		androidArchiveLibraries.forEach((Consumer<AndroidArchiveLibrary>) resolvedArtifact -> {
-			String extractedAarPath = (resolvedArtifact).getRootFolder().getAbsolutePath();
+			String extractedAarPath = resolvedArtifact.getRootFolder().getAbsolutePath();
 			File extractedAar = new File(extractedAarPath);
 			if (!extractedAar.exists()) {
 				try {

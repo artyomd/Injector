@@ -1,14 +1,14 @@
 package app.artyomd.injector.example;
 
-import android.app.Activity;
-import android.app.Fragment;
-import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.widget.FrameLayout;
 
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+
 import app.artyomd.injector.example.lib.BlankFragment;
 
-public class MainActivity extends Activity {
+public class MainActivity extends FragmentActivity {
 
 	private static final int CONTENT_VIEW_ID = 10101010;
 
@@ -19,7 +19,9 @@ public class MainActivity extends Activity {
 		FrameLayout frameLayout = findViewById(R.id.container);
 		frameLayout.setId(CONTENT_VIEW_ID);
 		Fragment newFragment = new BlankFragment();
-		FragmentTransaction ft = getFragmentManager().beginTransaction();
-		ft.add(CONTENT_VIEW_ID, newFragment).commit();
+		getSupportFragmentManager()
+				.beginTransaction()
+				.add(CONTENT_VIEW_ID, newFragment)
+				.commit();
 	}
 }

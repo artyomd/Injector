@@ -77,7 +77,6 @@ public class InjectorPlugin implements Plugin<Project> {
 		injectConf.getResolvedConfiguration().getFirstLevelModuleDependencies().forEach(resolvedDependency -> {
 			Set<ResolvedArtifact> dResolvedArtifacts = resolvedDependency.getModuleArtifacts();
 			Set<ResolvedArtifact> cResolvedArtifacts = resolvedDependency.getAllModuleArtifacts();
-			cResolvedArtifacts.removeAll(dResolvedArtifacts);
 			dResolvedArtifacts.forEach(resolvedArtifact -> {
 				Dependency dependency = Utils.createDependencyFrom(resolvedArtifact);
 				if (extension.isExcluded(resolvedArtifact)) {
@@ -96,6 +95,7 @@ public class InjectorPlugin implements Plugin<Project> {
 					project.getDependencies().add("compileOnly", dependency);
 				}
 			});
+			cResolvedArtifacts.removeAll(dResolvedArtifacts);
 			cResolvedArtifacts.forEach(resolvedArtifact -> {
 				Dependency dependency = Utils.createDependencyFrom(resolvedArtifact);
 				System.out.println("implementation:" + resolvedArtifact.getName());
