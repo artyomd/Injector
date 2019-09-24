@@ -7,7 +7,6 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeName;
@@ -24,6 +23,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -33,17 +35,16 @@ public class RSourceGenerator {
 	public static void generate(@Nonnull AndroidArchiveLibrary androidLibrary, @Nonnull String libPackageName, @Nonnull String buildDir, @Nonnull String variant, JavaVersion projectSourceVersion, JavaVersion projectTargetVersion) throws IOException {
 		File symbolFile = androidLibrary.getSymbolFile();
 		File manifestFile = androidLibrary.getManifest();
-		File rJarFile = new File(buildDir + "/intermediates/compile_only_not_namespaced_r_class_jar/" + variant.toLowerCase() + "/generate" + variant + "RFile/R.jar");
-		//File rFile = new File(buildDir + "/generated/not_namespaced_r_class_sources/" + variant.toLowerCase() + "/generate" + variant + "RFile/out/" + libPackageName.replace(".", "/") + "/R.java");
-		//Map<String, List<String>> data = parseRJavaFile(rFile);
+		File rJarFile = new File(buildDir + "/intermediates/compile_only_not_namespaced_r_class_jar/" + variant.toLowerCase() + "/R.jar");
 		if (!symbolFile.exists()) {
+			System.out.println("R.txt does not exists");
 			return;
 		}
 		if (!manifestFile.exists()) {
 			throw new RuntimeException("Can not find " + manifestFile);
 		}
 		// read R.txt
-		List<String> lines = Files.readLines(symbolFile, Charsets.UTF_8);
+		List<String> lines = FileUtils.readLines(symbolFile, Charsets.UTF_8);
 		Map<String, List<TextSymbolItem>> symbolItemsMap = Maps.newHashMap();
 		for (String line : lines) {
 			String[] strings = line.split(" ", 4);
@@ -52,6 +53,7 @@ public class RSourceGenerator {
 			symbolItems.add(symbolItem);
 		}
 		if (symbolItemsMap.isEmpty()) {
+			System.out.println("empty R.txt");
 			// empty R.txt
 			return;
 		}
@@ -88,12 +90,11 @@ public class RSourceGenerator {
 				}
 				FieldSpec.Builder fieldSpecBuilder = FieldSpec.builder(typeName, item.getName())
 						.addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL);
-				//List<String> fields = data.get(item.getClazz());
-				//if (fields != null && fields.contains(item.getName())) {
-				fieldSpecBuilder.initializer(libPackageName + ".R." + item.getClazz() + "." + item.getName());
-				//} else {
-				//	fieldSpecBuilder.initializer(item.getValue());
-				//}
+				if (checkField(rJarFile, libPackageName + ".R$" + item.getClazz(), item.getName())) {
+					fieldSpecBuilder.initializer(libPackageName + ".R." + item.getClazz() + "." + item.getName());
+				} else {
+					fieldSpecBuilder.initializer(item.getValue());
+				}
 				icb.addField(fieldSpecBuilder.build());
 			}
 			classBuilder.addType(icb.build());
@@ -135,27 +136,23 @@ public class RSourceGenerator {
 		Utils.execCommand("sh", cdR, injectCommandBuilder.toString());
 	}
 
-//	private static Map<String, List<String>> parseRJavaFile(File rFile) throws FileNotFoundException {
-//		Map<String, List<String>> data = new HashMap<>();
-//		CompilationUnit cu = JavaParser.parse(new FileInputStream(rFile));
-//		NodeList<TypeDeclaration<?>> types = cu.getTypes();
-//		for (TypeDeclaration<?> type : types) {
-//			NodeList<BodyDeclaration<?>> classes = type.getMembers();
-//			for (BodyDeclaration<?> clazz : classes) {
-//				if (clazz instanceof ClassOrInterfaceDeclaration) {
-//					String name = ((ClassOrInterfaceDeclaration) clazz).getName().asString();
-//					List<String> names = new ArrayList<>();
-//					NodeList<BodyDeclaration<?>> fields = ((ClassOrInterfaceDeclaration) clazz).getMembers();
-//					for (BodyDeclaration<?> field : fields) {
-//						if (field instanceof FieldDeclaration) {
-//							String varName = ((FieldDeclaration) field).getVariables().get(0).getName().asString();
-//							names.add(varName);
-//						}
-//					}
-//					data.put(name, names);
-//				}
-//			}
-//		}
-//		return data;
-//	}
+	private static boolean checkField(File jarFile, String clazzName, String fieldName) {
+		//hacky solution
+		//load jar file and try to get the filed if everything is ok field exists and compilation will not fail
+		URL[] urls = new URL[1];
+		try {
+			urls[0] = jarFile.toURI().toURL();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+			return false;
+		}
+		try (URLClassLoader cl = new URLClassLoader(urls)) {
+			Class clazz = cl.loadClass(clazzName);
+			clazz.getField(fieldName);
+		} catch (IOException | ClassNotFoundException | NoSuchFieldException e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
 }

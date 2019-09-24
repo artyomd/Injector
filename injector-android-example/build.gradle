@@ -9,13 +9,14 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.1'
+        classpath 'com.android.tools:r8:1.5.68'
+        classpath 'com.android.tools.build:gradle:3.5.0'
         classpath "app.artyomd.injector:injector:${VERSION_NAME}"
     }
 }
 
 plugins {
-    id 'com.gradle.build-scan' version '2.3'
+    id 'com.gradle.build-scan' version '2.4.1'
 }
 
 buildScan {

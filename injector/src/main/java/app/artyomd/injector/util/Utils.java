@@ -73,8 +73,8 @@ public class Utils {
 
 
 	public static boolean cmp(String v1, String v2) {
-		String[] numbers1 = v1.split(".");
-		String[] numbers2 = v2.split(".");
+		String[] numbers1 = v1.split("\\.");
+		String[] numbers2 = v2.split("\\.");
 		int minSize = numbers1.length;
 		if (numbers2.length < minSize) {
 			minSize = numbers2.length;

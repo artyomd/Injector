@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 29
+    buildToolsVersion = '29.0.2'
     defaultConfig {
         applicationId "app.artyomd.inject.example"
         minSdkVersion 16
@@ -15,7 +16,8 @@ android {
     buildTypes {
         release {
             minifyEnabled true
-            proguardFile getDefaultProguardFile('proguard-android.txt')
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                    'proguard-rules.pro'
         }
     }
     compileOptions {

@@ -3,12 +3,19 @@ apply plugin: 'app.artyomd.injector'
 
 android {
     compileSdkVersion 29
+    buildToolsVersion = '29.0.2'
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 29
     }
     lintOptions {
         abortOnError false
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt')
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -17,10 +24,9 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.0.2'
+    api 'androidx.fragment:fragment:1.1.0'
     inject 'com.airbnb.android:lottie:3.0.7'
 }
 injectConfig {
     enabled = true
-    forceExcludeGroups = ["com.squareup.okio"]
 }

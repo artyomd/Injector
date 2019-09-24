@@ -10,9 +10,6 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 @SuppressWarnings("unused")
 public class AndroidArchiveLibrary implements ResolvedArtifact {
@@ -47,20 +44,6 @@ public class AndroidArchiveLibrary implements ResolvedArtifact {
 
 	public File getClassesJarFile() {
 		return new File(getRootFolder(), "classes.jar");
-	}
-
-	public Collection<File> getLocalJars() {
-		List<File> localJars = new ArrayList<>();
-		File[] jarList = new File(getJarsRootFolder(), "libs").listFiles();
-		if (jarList != null) {
-			for (File jars : jarList) {
-				if (jars.isFile() && jars.getName().endsWith(".jar")) {
-					localJars.add(jars);
-				}
-			}
-		}
-
-		return localJars;
 	}
 
 	public File getJniFolder() {

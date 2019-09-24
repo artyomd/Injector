@@ -3,9 +3,10 @@ package app.artyomd.injector.task;
 import app.artyomd.injector.extension.InjectorExtension;
 import app.artyomd.injector.model.AndroidArchiveLibrary;
 import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
-import com.android.tools.r8.origin.CommandLineOrigin;
+import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.utils.ThreadUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.JavaVersion;
@@ -66,31 +67,33 @@ public class CreateInjectDexes extends DefaultTask {
 		List<ResolvedArtifact> artifacts = new ArrayList<>(androidArchiveLibraries);
 		artifacts.addAll(jarFiles);
 		Map<String, List<ResolvedArtifact>> dexs = extension.getDexes(artifacts);
-		List<List<String>> dexOptions = new ArrayList<>();
+		List<D8Command> dexOptions = new ArrayList<>();
 		String outFilePath = buildDirectory + extension.getDexLocation();
 		dexs.forEach((key, value) -> {
+			D8Command.Builder d8CommandBuilder = D8Command.builder();
 			if (!value.isEmpty()) {
 				String outPutDex = outFilePath + key + ".zip";
-				List<String> dexOption = new ArrayList<>();
-				dexOption.add("--release");
-				dexOption.add("--output");
-				dexOption.add(outPutDex);
-				dexOption.add("--min-api");
-				dexOption.add(Integer.toString(minApiLevel));
+				d8CommandBuilder.setMode(CompilationMode.RELEASE);
+				d8CommandBuilder.setMinApiLevel(minApiLevel);
+				d8CommandBuilder.setOutput(new File(outPutDex).toPath(), OutputMode.DexIndexed);
 				value.forEach(resolvedArtifact -> {
 					if (resolvedArtifact instanceof AndroidArchiveLibrary) {
 						File classesJar = ((AndroidArchiveLibrary) resolvedArtifact).getClassesJarFile();
 						if (classesJar.exists()) {
-							dexOption.add(classesJar.getAbsolutePath());
+							d8CommandBuilder.addProgramFiles(classesJar.toPath());
 						}
 					} else {
 						File classesJar = resolvedArtifact.getFile();
 						if (classesJar.exists()) {
-							dexOption.add(classesJar.getAbsolutePath());
+							d8CommandBuilder.addProgramFiles(classesJar.toPath());
 						}
 					}
 				});
-				dexOptions.add(dexOption);
+				try {
+					dexOptions.add(d8CommandBuilder.build());
+				} catch (CompilationFailedException e) {
+					e.printStackTrace();
+				}
 			}
 		});
 		File outFile = new File(outFilePath);
@@ -98,11 +101,9 @@ public class CreateInjectDexes extends DefaultTask {
 			outFile.mkdirs();
 		}
 
-		for (List<String> dexOption : dexOptions) {
-			D8Command command;
+		for (D8Command command : dexOptions) {
 			ExecutorService executor = ThreadUtils.getExecutorService(-1);
 			try {
-				command = D8Command.parse(dexOption.toArray(EMPTY_STRING_ARRAY), CommandLineOrigin.INSTANCE).build();
 				D8.run(command, executor);
 			} catch (CompilationFailedException e) {
 				e.printStackTrace();
