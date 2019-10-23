@@ -57,3 +57,10 @@ dependencies {
 }
 ```
 You can upload dex file to somewhere and then at runtime download and load it or copy dex file to assets folder then at runtime copy the file into internal storage and then load dex file. If your dex files are in the assets dir just use **DexUtils.prepareDex** to copy dex files into internal storage. Using **DexUtils.loadDex** you can load a list of dex files into your application at runtime.
+
+## Disclaimer
+
+> An app distributed via Google Play may not modify, replace, or update itself using any method other than Google Play's update mechanism. Likewise, an app may not download executable code (e.g. dex, JAR, .so files) from a source other than Google Play. This restriction does not apply to code that runs in a virtual machine and has limited access to Android APIs (such as JavaScript in a webview or browser).
+[Source](https://play.google.com/about/privacy-security-deception/malicious-behavior/)
+
+Be aware that downloading executable code from an application may affect the removal of your application from Google Play.
