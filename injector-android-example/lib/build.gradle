@@ -24,7 +24,7 @@ android {
 }
 
 dependencies {
-    api 'androidx.fragment:fragment:1.1.0'
+    api 'androidx.fragment:fragment:1.2.2'
     inject 'com.airbnb.android:lottie:3.3.1'
 }
 injectConfig {
