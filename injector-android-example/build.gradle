@@ -10,7 +10,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools:r8:1.5.68'
-        classpath 'com.android.tools.build:gradle:3.5.3'
+        classpath 'com.android.tools.build:gradle:3.6.1'
         classpath "app.artyomd.injector:injector:${VERSION_NAME}"
     }
 }
