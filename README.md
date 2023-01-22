@@ -1,3 +1,5 @@
+**This project is no longer being maintained. The main reason is that the owner of the repository does not see a need to invest time and resources in it due to the fact that it addresses a very specific edge case and the effort is not justified. Despite the presence of bugs and issues, it was determined during development that they are all fixable or have workarounds. You are welcome to fork the project and make any changes you desire. The project is also considered a good example of working with Gradle plugins and the owner hopes it may still be helpful to others.**
+
 <p align="center">
 <img src="https://raw.githubusercontent.com/jbeguna04/Injector/master/LogoDesigns/logotype1blue.png" width=610.082 align="center">
 </p>
